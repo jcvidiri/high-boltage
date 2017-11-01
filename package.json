@@ -1,0 +1,30 @@
+{
+  "name": "blockchainDB",
+  "author": "Juan Cruz Vidiri <jcvidiri@gmail.com>",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "server": "babel-node ./src/server/index",
+    "test-airport": "mocha --compilers js:babel-core/register ./server/tests/**/*.spec.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jcvidiri/blockchainDB.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jcvidiri/blockchainDB/issues"
+  },
+  "homepage": "https://github.com/jcvidiri/blockchainDB#readme",
+  "devDependencies": {
+    "babel-cli": "*",
+    "babel-preset-es2015": "*",
+    "chai": "^3.5.0",
+    "mocha": "^3.3.0"
+  },
+  "dependencies": {
+    "dotenv": "^4.0.0",
+    "express": "^4.16.2"
+  }
+}
