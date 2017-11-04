@@ -14,7 +14,7 @@ const test      = '/',
 
 //GETS
 app.get(test, (req, res, next) => {
-  blockchainController.blockchain((err, result) => {
+  blockchainController.getBlockchain((err, result) => {
     if (err) return next(err)
 
     res.send(result)
@@ -40,7 +40,5 @@ app.post(addPeer, (req, res) => {
     connectToPeers([req.body.peer])
     res.send()
 })
-app.listen(http_port, () => console.log('Listening http on port: ' + http_port))
-
 
 export default app

@@ -11,7 +11,7 @@ let write = (ws, message) => ws.send(JSON.stringify(message))
 let broadcast = (message) => sockets.forEach(socket => write(socket, message))
 
 
-export function initP2PServer (port) {
+let initP2PServer = (port) => {
     let server = new webSocket.Server({port})
     server.on('connection', (ws) => {
       sockets.push(ws)
@@ -20,7 +20,7 @@ export function initP2PServer (port) {
       write(ws, queryChainLengthMsg())
     })
 
-    console.log('listening websocket p2p port on: ' + P2P_PORT)
+    console.log('listening websocket p2p port on: ' + port)
 }
 
 function initMessageHandler (ws) {
@@ -93,3 +93,5 @@ let handleBlockchainResponse = (message) => {
         console.log('received blockchain is not longer than received blockchain. Do nothing')
     }
 }
+
+export { initP2PServer, connectToPeers }
