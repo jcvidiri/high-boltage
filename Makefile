@@ -12,6 +12,7 @@ MAINJS_FILE = server/index
 dev:
 		DEBUG= $(BABEL_WATCH) --watch . src/$(MAINJS_FILE)
 start:
+	make build
 	node $(BUILD_DIR)/$(MAINJS_FILE)
 build:
 	make clean

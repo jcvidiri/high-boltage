@@ -1,4 +1,5 @@
-import webSocket from 'ws'
+import WebSocket from 'ws'
+import { getLatestBlock } from './controllers/blocks'
 
 let sockets = []
 let MessageType = {
@@ -12,7 +13,7 @@ let broadcast = (message) => sockets.forEach(socket => write(socket, message))
 
 
 let initP2PServer = (port) => {
-    let server = new webSocket.Server({port})
+    let server = new WebSocket.Server({port})
     server.on('connection', (ws) => {
       sockets.push(ws)
       initMessageHandler(ws)
@@ -61,7 +62,13 @@ let connectToPeers = (newPeers) => {
     })
 }
 
-let getLatestBlock = () => blockchain[blockchain.length - 1]
+let initConnection = (ws) => {
+    sockets.push(ws);
+    initMessageHandler(ws);
+    initErrorHandler(ws);
+    write(ws, queryChainLengthMsg());
+};
+
 let queryChainLengthMsg = () => ({'type': MessageType.QUERY_LATEST})
 let queryAllMsg = () => ({'type': MessageType.QUERY_ALL})
 let responseChainMsg = () =>({
@@ -94,4 +101,4 @@ let handleBlockchainResponse = (message) => {
     }
 }
 
-export { initP2PServer, connectToPeers }
+export { initP2PServer, connectToPeers, broadcast, write, responseLatestMsg, sockets }

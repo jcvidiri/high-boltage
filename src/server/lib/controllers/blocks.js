@@ -1,5 +1,6 @@
 'use strict'
 import CryptoJS from 'crypto-js'
+import { broadcast, write, responseLatestMsg } from '../websocket'
 
 class Block {
     constructor(index, previousHash, timestamp, data, hash) {
@@ -41,6 +42,8 @@ let addBlock = (newBlock) => {
     }
 }
 
+let getLatestBlock = () => blockchain[blockchain.length - 1]
+
 let isValidNewBlock = (newBlock, previousBlock) => {
     if (previousBlock.index + 1 !== newBlock.index) {
         console.log('invalid index')
@@ -66,6 +69,14 @@ let replaceChain = (newBlocks) => {
     }
 }
 
+let mineBlock = (data, callback) => {
+    var newBlock = generateNextBlock(data)
+    addBlock(newBlock)
+    broadcast(responseLatestMsg())
+    console.log('block added: ' + JSON.stringify(newBlock))
+    return callback(null, newBlock)
+}
+
 let isValidChain = (blockchainToValidate) => {
     if (JSON.stringify(blockchainToValidate[0]) !== JSON.stringify(getGenesisBlock())) {
         return false
@@ -81,4 +92,4 @@ let isValidChain = (blockchainToValidate) => {
     return true
 }
 
-export { getBlockchain }
+export { getBlockchain, getLatestBlock, mineBlock }

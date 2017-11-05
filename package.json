@@ -12,7 +12,7 @@
     "test": "make test",
     "test-block": "make test-block",
     "production": "make production",
-    "start": "make production",
+    "start": "make start",
     "stop": "make stop"
   },
   "repository": {
