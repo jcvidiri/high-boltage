@@ -7,10 +7,25 @@ class Block {
         this.index = index
         this.previousHash = previousHash.toString()
         this.timestamp = timestamp
-        this.data = data
+        this.data = data // transactions
+        // this.transactionCounter = getTransactionsCount()
         this.hash = hash.toString()
     }
 }
+
+
+// let data = { // example only 1 transaction, with 1 input/output
+//         input: {
+//             previous_tx: 'f5d8ee39a430901c91a5917b9f2dc19d6d1a0e9cea205b009ca73dd04470b9a6',
+//             index: '0',
+//             scriptSig: '304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501'
+//         },
+//         output: {
+//             value: '5000000000',
+//             rate: '3000'
+//             scriptPubKey: 'OP_DUP OP_HASH160 404371705fa9bd789a2fcd52d2c580b65d35549d OP_EQUALVERIFY OP_CHECKSIG'
+//         }
+//     }
 
 let getGenesisBlock = () => {
     return new Block(0, "0", 1465154705, "GENESIS BLOCK!", "816534932c2b7154836da6afc367695e6337db8a921823784c14378abed4f7d7")
