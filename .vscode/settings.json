@@ -1,0 +1,55 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "flow.enabled": false,
+    "stylelint.enable": false,
+    "auto-close-tag.enableAutoCloseTag": false,
+    "auto-rename-tag.activationOnLanguage": [
+      "html"
+    ],
+    "prettier.eslintIntegration": true,
+    "prettier.stylelintIntegration": false,
+    "path-intellisense.absolutePathToWorkspace": true,
+    "path-intellisense.extensionOnImport": false,
+    "npm-intellisense.importDeclarationType": "const",
+    "npm-intellisense.importLinebreak": "\r\n",
+    "npm-intellisense.packageSubfoldersIntellisense": true,
+    "npm-intellisense.recursivePackageJsonLookup": true,
+    "npm-intellisense.importES6": true,
+    "npm-intellisense.importQuotes": "'",
+    "editor.detectIndentation": true,
+    "editor.tabSize": 2,
+    "prettier.bracketSpacing": false,
+    "prettier.arrowParens": "avoid",
+    "prettier.jsxBracketSameLine": false,
+    "prettier.printWidth": 120,
+    "prettier.semi": false,
+    "prettier.singleQuote": true,
+    "prettier.useTabs": false,
+    "files.associations": {
+      "*.js": "javascript"
+    },
+    "javascript.validate.enable": false,
+    "javascript.format.enable": false,
+    "editor.formatOnSave": true,
+    "better-comments.multilineComments": true,
+    "eslint.options": {
+      "extensions": [
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx"
+      ]
+    },
+    "eslint.validate": [
+      "javascript",
+      "javascriptreact",
+      "typescript",
+      "typescriptreact"
+    ]
+  }
+}

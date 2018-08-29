@@ -1,0 +1,68 @@
+{
+  "index": "0",
+  "previousHash": "",
+  "timestamp": "1535501689537",
+  "transactionCounter": "3",
+  "vinCounter": "2",
+  "voutCounter": "3",
+  "hash": "",
+  "transactions": [
+    {
+      "to": "consumer1",
+      "from": "generatorA",
+      "txId": "0",
+      "value": "300",
+      "rate": "1",
+      "adjust": [],
+      "prevtx": "",
+      "scriptSig": "",
+      "timeLimit": "7"
+    },
+    {
+      "to": "consumer2",
+      "from": "generatorA",
+      "txId": "1",
+      "value": "150",
+      "rate": "1",
+      "adjust": [],
+      "prevtx": "0",
+      "scriptSig": "",
+      "timeLimit": "7"
+    },
+    {
+      "to": "consumer3",
+      "from": "generatorB",
+      "txId": "2",
+      "value": "80",
+      "rate": "1",
+      "adjust": [],
+      "prevtx": "1",
+      "scriptSig": "",
+      "timeLimit": "7"
+    }
+  ],
+  "vout": [
+    {
+      "receiver": "consumer1",
+      "value": "300"
+    },
+    {
+      "receiver": "consumer2",
+      "value": "150"
+    },
+    {
+      "receiver": "consumer3",
+      "value": "80"
+    }
+  ],
+  "vin": [
+    {
+      "generator": "generatorA",
+      "value": "450"
+    },
+    {
+      "generator": "generatorB",
+      "value": "80"
+    }
+  ]
+}

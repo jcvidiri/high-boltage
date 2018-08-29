@@ -9,7 +9,6 @@ import bodyParser from 'body-parser'
 const app = express()
 app.use(bodyParser.json())
 
-
 // ROUTES
 const blocks    = '/blocks',
       mineBlock = '/mineBlock',

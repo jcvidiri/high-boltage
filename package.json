@@ -1,7 +1,7 @@
 {
-  "name": "blockchainDB",
+  "name": "high-boltage",
   "author": "Juan Cruz Vidiri <jcvidiri@gmail.com>",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -17,18 +17,24 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jcvidiri/blockchainDB.git"
+    "url": "git+https://github.com/jcvidiri/high-boltage.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jcvidiri/blockchainDB/issues"
+    "url": "https://github.com/jcvidiri/high-boltage/issues"
   },
-  "homepage": "https://github.com/jcvidiri/blockchainDB#readme",
+  "homepage": "https://github.com/jcvidiri/high-boltage#readme",
   "devDependencies": {
     "babel-cli": "*",
     "babel-preset-es2015": "*",
     "babel-watch": "^2.0.7",
     "chai": "^3.5.0",
+    "eslint": "^5.4.0",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^7.0.1",
+    "eslint-plugin-promise": "^4.0.0",
+    "eslint-plugin-standard": "^4.0.0",
     "mocha": "^5.2.0",
     "snazzy": "^7.0.0"
   },
