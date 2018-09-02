@@ -1,11 +1,9 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import Button from '@material-ui/core/Button'
 import Card from '@material-ui/core/Card'
 import CardActions from '@material-ui/core/CardActions'
 import CardContent from '@material-ui/core/CardContent'
 import CardHeader from '@material-ui/core/CardHeader'
-import CssBaseline from '@material-ui/core/CssBaseline'
 import Grid from '@material-ui/core/Grid'
 import StarIcon from '@material-ui/icons/StarBorder'
 import CompareArrowsIcon from '@material-ui/icons/CompareArrows'
@@ -38,7 +36,6 @@ function Explorer(props) {
 
   return (
     <React.Fragment>
-      <CssBaseline />
       <main className={classes.layout}>
         <div className={classes.spacer} />
         <Grid container spacing={40} alignItems="flex-end">
@@ -82,10 +79,6 @@ function Explorer(props) {
       </main>
     </React.Fragment>
   )
-}
-
-Explorer.propTypes = {
-  classes: PropTypes.object.isRequired
 }
 
 export default Explorer
