@@ -5,8 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "server": "babel-node ./src/server/index",
-    "test-airport": "mocha --compilers js:babel-core/register ./server/tests/**/*.spec.js",
+    "server": "babel-node ./index",
     "build": "make build",
     "dev": "make dev",
     "test": "make test",
@@ -25,8 +24,8 @@
   },
   "homepage": "https://github.com/jcvidiri/high-boltage#readme",
   "devDependencies": {
-    "babel-cli": "*",
-    "babel-preset-es2015": "*",
+    "babel-cli": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
     "babel-watch": "^2.0.7",
     "chai": "^3.5.0",
     "eslint": "^5.4.0",
@@ -39,6 +38,7 @@
     "snazzy": "^7.0.0"
   },
   "dependencies": {
+    "babel-preset-stage-0": "^6.24.1",
     "body-parser": "^1.18.2",
     "crypto-js": "^3.1.9-1",
     "dotenv": "^4.0.0",

@@ -7,7 +7,7 @@ MOCHA = $(NODE_MODULES_BINARIES)/mocha
 STANDARD = $(NODE_MODULES_BINARIES)/standard
 SNAZZY = $(NODE_MODULES_BINARIES)/snazzy
 
-MAINJS_FILE = server/index
+MAINJS_FILE = index
 
 dev:
 		DEBUG= $(BABEL_WATCH) --watch . src/$(MAINJS_FILE)
