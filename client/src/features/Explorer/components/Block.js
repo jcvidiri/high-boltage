@@ -33,11 +33,12 @@ function Block({props}) {
                 transactions
               </Typography>
             </div>
-            {block.description.map(line => (
-              <Typography variant="subheading" align="center" key={line}>
-                {line}
-              </Typography>
-            ))}
+            {block.description &&
+              block.description.map(line => (
+                <Typography variant="subheading" align="center" key={line}>
+                  {line}
+                </Typography>
+              ))}
           </CardContent>
           <CardActions className={classes.cardActions}>
             <IconButton variant={block.buttonVariant} color="primary">
