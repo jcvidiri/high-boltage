@@ -2,7 +2,7 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import routes from './lib/routes'
-import * as webSocket from './lib/websocket'
+import * as webSocket from './lib/p2p'
 import dotenv from 'dotenv'
 
 dotenv.config()

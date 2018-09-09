@@ -1,19 +1,17 @@
 'use strict'
 import express from 'express'
-import * as blockchainController from './controllers/blocks'
-import * as webSocket from './websocket'
+import * as blockchainController from './blockchain'
+import * as webSocket from './p2p'
 import bodyParser from 'body-parser'
-
-// import * as minerController from './controllers/miner'
 
 const app = express()
 app.use(bodyParser.json())
 
 // ROUTES
 const blocks = '/blocks'
-const mineBlock = '/mineBlock'
+const mintBlock = '/mintBlock'
 const peers = '/peers'
-const addPeer = '/addPeer'
+// const addPeer = '/addPeer'
 
 // GETS
 app.get(blocks, (req, res, next) => {
@@ -25,48 +23,50 @@ app.get(blocks, (req, res, next) => {
     res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
     res.set('Access-Control-Allow-Credentials', true) // If needed
 
-    // TODO fake results
-    result = [
-      {
-        height: '0',
-        transactions: '0',
-        description: ['lorem ipsum', 'foo bar', 'block stuff....', 'genesis block'],
-        buttonVariant: 'contained'
-      },
-      {
-        height: '1',
-        // subheader: 'some subheader',
-        transactions: '15',
-        description: ['lorem ipsum', 'foo bar', 'block stuff....', 'Priority'],
-        buttonVariant: 'outlined'
-      },
-      {
-        height: '2',
-        transactions: '30',
-        description: ['lorem ipsum', 'foo bar', 'block stuff....', 'sigscript'],
-        buttonVariant: 'outlined',
-        lastBlock: true
-      }
-    ]
+    // // TODO fake results
+    // result = [
+    //   {
+    //     height: '0',
+    //     transactions: '0',
+    //     description: ['lorem ipsum', 'foo bar', 'block stuff....', 'genesis block'],
+    //     buttonVariant: 'contained'
+    //   },
+    //   {
+    //     height: '1',
+    //     // subheader: 'some subheader',
+    //     transactions: '15',
+    //     description: ['lorem ipsum', 'foo bar', 'block stuff....', 'Priority'],
+    //     buttonVariant: 'outlined'
+    //   },
+    //   {
+    //     height: '2',
+    //     transactions: '30',
+    //     description: ['lorem ipsum', 'foo bar', 'block stuff....', 'sigscript'],
+    //     buttonVariant: 'outlined',
+    //     lastBlock: true
+    //   }
+    // ]
 
     res.send(result)
   })
 })
 
 // POSTS
-app.post(mineBlock, (req, res, next) => {
-  blockchainController.mineBlock(req.body.data, (err, result) => {
+app.post(mintBlock, (req, res, next) => {
+  blockchainController.mintBlock(req.body.data, (err, result) => {
     if (err) return next(err)
 
     res.send(result)
   })
 })
+
 app.get(peers, (req, res) => {
   res.send(webSocket.sockets.map(s => s._socket.remoteAddress + ':' + s._socket.remotePort))
 })
-app.post(addPeer, (req, res) => {
-  connectToPeers([req.body.peer])
-  res.send()
-})
+
+// app.post(addPeer, (req, res) => {
+//   connectToPeers([req.body.peer])
+//   res.send()
+// })
 
 export default app
