@@ -8,9 +8,7 @@
     "flow.enabled": false,
     "stylelint.enable": false,
     "auto-close-tag.enableAutoCloseTag": false,
-    "auto-rename-tag.activationOnLanguage": [
-      "html"
-    ],
+    "auto-rename-tag.activationOnLanguage": ["html"],
     "prettier.eslintIntegration": true,
     "prettier.stylelintIntegration": false,
     "path-intellisense.absolutePathToWorkspace": true,
@@ -33,23 +31,17 @@
     "files.associations": {
       "*.js": "javascript"
     },
+    "files.exclude": {
+      "**/*.js": true,
+      "**/*.js.map": true
+    },
     "javascript.validate.enable": false,
     "javascript.format.enable": false,
     "editor.formatOnSave": true,
     "better-comments.multilineComments": true,
     "eslint.options": {
-      "extensions": [
-        ".js",
-        ".ts",
-        ".jsx",
-        ".tsx"
-      ]
+      "extensions": [".js", ".ts", ".jsx", ".tsx"]
     },
-    "eslint.validate": [
-      "javascript",
-      "javascriptreact",
-      "typescript",
-      "typescriptreact"
-    ]
+    "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"]
   }
 }

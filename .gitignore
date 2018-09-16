@@ -2,11 +2,16 @@
 *.log
 
 # Dependency directories
-node_modules/
-src/client/node_modules
+client/node_modules
+server/node_modules
 
 # dotenv environment variables file
 .env
+npm-debug.log
+.idea
+server/src/**/*.js
+server/src/**/*.map
 
 # build
-build/
+server/build/
+client/build/
