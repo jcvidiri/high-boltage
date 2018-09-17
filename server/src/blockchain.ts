@@ -1,27 +1,32 @@
 import * as CryptoJS from 'crypto-js'
 import * as _ from 'lodash'
-import {broadcastLatest, broadCastTransactionPool} from './p2p'
-import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
-import {addToTransactionPool, getTransactionPool, updateTransactionPool} from './transaction-pool'
-import {createTransaction, findUnspentTxOuts, getBalance, getPrivateFromWallet, getPublicFromWallet} from './wallet'
-import {BigNumber} from 'bignumber.js'
+import { broadcastLatest, broadCastTransactionPool } from './p2p'
+import { getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut } from './transaction'
+import { Measurement } from './measurement'
+import { addToTransactionPool, getTransactionPool, updateTransactionPool } from './transaction-pool'
+import { createTransaction, findUnspentTxOuts, getBalance, getPrivateKey, getPublicFromWallet } from './wallet'
+import { BigNumber } from 'bignumber.js'
+
+const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
+const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
+const mintingWithoutCoinIndex = 100
 
 class Block {
   public index: number
   public hash: string
   public previousHash: string
   public timestamp: number
-  public data: Transaction[]
+  public data: Payload
   public difficulty: number
-  public minterBalance: number // hack to avoid recaculating the balance of the minter at a precise height
+  public minterBalance: number
   public minterAddress: string
 
-  constructor(
+  constructor (
     index: number,
     hash: string,
     previousHash: string,
     timestamp: number,
-    data: Transaction[],
+    data: Payload,
     difficulty: number,
     minterBalance: number,
     minterAddress: string
@@ -37,53 +42,60 @@ class Block {
   }
 }
 
-const genesisTransaction = {
-  txIns: [{signature: '', txOutId: '', txOutIndex: 0}],
+class Payload {
+  public transactions: Transaction[]
+  public measurements: Measurement[]
+
+  constructor (transactions: Transaction[], measurements: Measurement[]) {
+    ;(this.transactions = transactions), (this.measurements = measurements)
+  }
+}
+
+// todo change this
+const genesisTransaction: Transaction = {
+  txIns: [{ signature: '', txOutId: '', txOutIndex: 0 }],
   txOuts: [
     {
-      address:
-        '04bfcab8722991ae774db48f934ca79cfb7dd991229153b9f732ba5334aafcd8e7266e47076996b55a14bf9913ee3145ce0cfc1372ada8ada74bd287450313534a',
+      address: 'someAddress1',
       amount: 50
     }
   ],
-  id: 'e655f6a5f26dc9b4cac6e46f52336428287759cf81ef5ff10854f69d68f43fa3'
+  id: 'someId1'
+}
+
+const genesisMeasurement: Measurement = {
+  msIns: [{ signature: '', msOutId: '', msOutIndex: 0 }],
+  msOuts: [
+    {
+      address: 'someAddress1',
+      amount: 50
+    }
+  ],
+  id: 'someId1'
 }
 
 const genesisBlock: Block = new Block(
   0,
   '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627',
   '',
-  1465154705,
-  [genesisTransaction],
+  1537145550257,
+  { transactions: [genesisTransaction], measurements: [genesisMeasurement] },
   0,
   0,
-  '04bfcab8722991ae774db48f934ca79cfb7dd991229153b9f732ba5334aafcd8e7266e47076996b55a14bf9913ee3145ce0cfc1372ada8ada74bd287450313534a'
+  'someAddress1'
 )
 
-// Number of blocks that can be minted with accounts without any coins
-const mintingWithoutCoinIndex = 100
-
 let blockchain: Block[] = [genesisBlock]
-
-// the unspent txOut of genesis block is set to unspentTxOuts on startup
 let unspentTxOuts: UnspentTxOut[] = processTransactions(blockchain[0].data, [], 0)
 
 const getBlockchain = (): Block[] => blockchain
 
 const getUnspentTxOuts = (): UnspentTxOut[] => _.cloneDeep(unspentTxOuts)
 
-// and txPool should be only updated at the same time
 const setUnspentTxOuts = (newUnspentTxOut: UnspentTxOut[]) => {
   unspentTxOuts = newUnspentTxOut
 }
-
 const getLatestBlock = (): Block => blockchain[blockchain.length - 1]
-
-// in seconds
-const BLOCK_GENERATION_INTERVAL: number = 10
-
-// in blocks
-const DIFFICULTY_ADJUSTMENT_INTERVAL: number = 10
 
 const getDifficulty = (aBlockchain: Block[]): number => {
   const latestBlock: Block = aBlockchain[blockchain.length - 1]
@@ -109,7 +121,7 @@ const getAdjustedDifficulty = (latestBlock: Block, aBlockchain: Block[]) => {
 
 const getCurrentTimestamp = (): number => Math.round(new Date().getTime() / 1000)
 
-const generateRawNextBlock = (blockData: Transaction[]) => {
+const generateRawNextBlock = (blockData: Payload) => {
   const previousBlock: Block = getLatestBlock()
   const difficulty: number = getDifficulty(getBlockchain())
   const nextIndex: number = previousBlock.index + 1
@@ -122,37 +134,34 @@ const generateRawNextBlock = (blockData: Transaction[]) => {
   }
 }
 
-// gets the unspent transaction outputs owned by the wallet
 const getMyUnspentTransactionOutputs = () => {
   return findUnspentTxOuts(getPublicFromWallet(), getUnspentTxOuts())
 }
 
 const generateNextBlock = () => {
   const coinbaseTx: Transaction = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1)
-  const blockData: Transaction[] = [coinbaseTx].concat(getTransactionPool())
+  const blockData: Payload = { transactions: [coinbaseTx].concat(getTransactionPool()), measurements: [] }
   return generateRawNextBlock(blockData)
 }
 
 const generatenextBlockWithTransaction = (receiverAddress: string, amount: number) => {
-  if (!isValidAddress(receiverAddress)) {
-    throw Error('invalid address')
-  }
-  if (typeof amount !== 'number') {
-    throw Error('invalid amount')
-  }
+  if (!isValidAddress(receiverAddress)) throw Error('invalid address')
+
+  if (typeof amount !== 'number') throw Error('invalid amount')
+
   const coinbaseTx: Transaction = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1)
   const tx: Transaction = createTransaction(
     receiverAddress,
     amount,
-    getPrivateFromWallet(),
+    getPrivateKey(),
     getUnspentTxOuts(),
     getTransactionPool()
   )
-  const blockData: Transaction[] = [coinbaseTx, tx]
+  const blockData: Payload = { transactions: [coinbaseTx, tx], measurements: [] }
   return generateRawNextBlock(blockData)
 }
 
-const findBlock = (index: number, previousHash: string, data: Transaction[], difficulty: number): Block => {
+const findBlock = (index: number, previousHash: string, data: Payload, difficulty: number): Block => {
   let pastTimestamp: number = 0
   while (true) {
     let timestamp: number = getCurrentTimestamp()
@@ -188,13 +197,7 @@ const getAccountBalance = (): number => {
 }
 
 const sendTransaction = (address: string, amount: number): Transaction => {
-  const tx: Transaction = createTransaction(
-    address,
-    amount,
-    getPrivateFromWallet(),
-    getUnspentTxOuts(),
-    getTransactionPool()
-  )
+  const tx: Transaction = createTransaction(address, amount, getPrivateKey(), getUnspentTxOuts(), getTransactionPool())
   addToTransactionPool(tx, getUnspentTxOuts())
   broadCastTransactionPool()
   return tx
@@ -215,43 +218,39 @@ const calculateHash = (
   index: number,
   previousHash: string,
   timestamp: number,
-  data: Transaction[],
+  data: Payload,
   difficulty: number,
   minterBalance: number,
   minterAddress: string
 ): string =>
   CryptoJS.SHA256(index + previousHash + timestamp + data + difficulty + minterBalance + minterAddress).toString()
-// The hash for Proof of Stake does not include a nonce to avoid more than one trial per second
+
 const isValidBlockStructure = (block: Block): boolean => {
   return (
     typeof block.index === 'number' &&
     typeof block.hash === 'string' &&
-    typeof block.previousHash === 'string' &&
-    typeof block.timestamp === 'number' &&
     typeof block.data === 'object' &&
+    typeof block.data.transactions === 'object' && // check for array?
+    typeof block.data.measurements === 'object' &&
+    typeof block.timestamp === 'number' &&
     typeof block.difficulty === 'number' &&
+    typeof block.previousHash === 'string' &&
     typeof block.minterBalance === 'number' &&
     typeof block.minterAddress === 'string'
   )
 }
 
 const isValidNewBlock = (newBlock: Block, previousBlock: Block): boolean => {
-  if (!isValidBlockStructure(newBlock)) {
-    console.log('invalid block structure: %s', JSON.stringify(newBlock))
+  if (
+    !hasValidHash(newBlock) ||
+    !isValidBlockStructure(newBlock) ||
+    !isValidTimestamp(newBlock, previousBlock) ||
+    previousBlock.index + 1 !== newBlock.index ||
+    previousBlock.hash !== newBlock.previousHash
+  ) {
     return false
   }
-  if (previousBlock.index + 1 !== newBlock.index) {
-    console.log('invalid index')
-    return false
-  } else if (previousBlock.hash !== newBlock.previousHash) {
-    console.log('invalid previoushash')
-    return false
-  } else if (!isValidTimestamp(newBlock, previousBlock)) {
-    console.log('invalid timestamp')
-    return false
-  } else if (!hasValidHash(newBlock)) {
-    return false
-  }
+
   return true
 }
 
@@ -267,10 +266,7 @@ const isValidTimestamp = (newBlock: Block, previousBlock: Block): boolean => {
 }
 
 const hasValidHash = (block: Block): boolean => {
-  if (!hashMatchesBlockContent(block)) {
-    console.log('invalid hash, got:' + block.hash)
-    return false
-  }
+  if (!hashMatchesBlockContent(block)) return false
 
   if (
     !isBlockStakingValid(
@@ -292,9 +288,6 @@ const hashMatchesBlockContent = (block: Block): boolean => {
   return blockHash === block.hash
 }
 
-// This function is used for proof of stake
-// Based on `SHA256(prevhash + address + timestamp) <= 2^256 * balance / diff`
-// Cf https://blog.ethereum.org/2014/07/05/stake/
 const isBlockStakingValid = (
   prevhash: string,
   address: string,
@@ -305,12 +298,9 @@ const isBlockStakingValid = (
 ): boolean => {
   difficulty = difficulty + 1
 
-  // Allow minting without coins for a few blocks
-  if (index <= mintingWithoutCoinIndex) {
-    balance = balance + 1
-  }
+  if (index <= mintingWithoutCoinIndex) balance = balance + 1
 
-  const balanceOverDifficulty = new BigNumber(2)
+  const balanceOverDifficulty = new BigNumber(2) // 2^256 * balance / diff
     .exponentiatedBy(256)
     .times(balance)
     .dividedBy(difficulty)
@@ -321,12 +311,7 @@ const isBlockStakingValid = (
   return difference >= 0
 }
 
-/*
-    Checks if the given blockchain is valid. Return the unspent txOuts if the chain is valid
- */
 const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
-  console.log('isValidChain:')
-  console.log(JSON.stringify(blockchainToValidate))
   const isValidGenesis = (block: Block): boolean => {
     return JSON.stringify(block) === JSON.stringify(genesisBlock)
   }
@@ -334,10 +319,7 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
   if (!isValidGenesis(blockchainToValidate[0])) {
     return null
   }
-  /*
-    Validate each block in the chain. The block is valid if the block structure is valid
-      and the transaction are valid
-     */
+
   let aUnspentTxOuts: UnspentTxOut[] = []
 
   for (let i = 0; i < blockchainToValidate.length; i++) {
@@ -375,13 +357,10 @@ const replaceChain = (newBlocks: Block[]) => {
   const aUnspentTxOuts = isValidChain(newBlocks)
   const validChain: boolean = aUnspentTxOuts !== null
   if (validChain && getAccumulatedDifficulty(newBlocks) > getAccumulatedDifficulty(getBlockchain())) {
-    console.log('Received blockchain is valid. Replacing current blockchain with received blockchain')
     blockchain = newBlocks
     setUnspentTxOuts(aUnspentTxOuts)
     updateTransactionPool(unspentTxOuts)
     broadcastLatest()
-  } else {
-    console.log('Received blockchain invalid')
   }
 }
 
@@ -391,6 +370,7 @@ const handleReceivedTransaction = (transaction: Transaction) => {
 
 export {
   Block,
+  Payload,
   getBlockchain,
   getUnspentTxOuts,
   getLatestBlock,

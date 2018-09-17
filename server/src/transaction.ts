@@ -1,9 +1,8 @@
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
 import * as _ from 'lodash'
-
+import { Payload } from './blockchain'
 const ec = new ecdsa.ec('secp256k1')
-
 const COINBASE_AMOUNT: number = 50
 
 class UnspentTxOut {
@@ -38,7 +37,6 @@ class TxOut {
 
 class Transaction {
   public id: string
-
   public txIns: TxIn[]
   public txOuts: TxOut[]
 }
@@ -247,12 +245,12 @@ const updateUnspentTxOuts = (aTransactions: Transaction[], aUnspentTxOuts: Unspe
   return resultingUnspentTxOuts
 }
 
-const processTransactions = (aTransactions: Transaction[], aUnspentTxOuts: UnspentTxOut[], blockIndex: number) => {
-  if (!validateBlockTransactions(aTransactions, aUnspentTxOuts, blockIndex)) {
+const processTransactions = (aPayload: Payload, aUnspentTxOuts: UnspentTxOut[], blockIndex: number) => {
+  if (!validateBlockTransactions(aPayload.transactions, aUnspentTxOuts, blockIndex)) {
     console.log('invalid block transactions')
     return null
   }
-  return updateUnspentTxOuts(aTransactions, aUnspentTxOuts)
+  return updateUnspentTxOuts(aPayload.transactions, aUnspentTxOuts)
 }
 
 const toHexString = (byteArray): string => {

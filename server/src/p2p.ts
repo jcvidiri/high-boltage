@@ -11,6 +11,7 @@ import {
 } from './blockchain'
 import { Transaction } from './transaction'
 import { getTransactionPool } from './transaction-pool'
+import { JSONToObject } from './utils'
 
 const sockets: WebSocket[] = []
 
@@ -27,12 +28,12 @@ class Message {
   public data: any
 }
 
-const initP2PServer = (p2pPort: number) => {
-  const server: Server = new WebSocket.Server({ port: p2pPort })
+const p2pServer = (port: number) => {
+  const server: Server = new WebSocket.Server({ port: port })
   server.on('connection', (ws: WebSocket) => {
     initConnection(ws)
   })
-  console.log('listening websocket p2p port on: ' + p2pPort)
+  console.log('listening websocket p2p port on: ' + port)
 }
 
 const getSockets = () => sockets
@@ -43,19 +44,9 @@ const initConnection = (ws: WebSocket) => {
   initErrorHandler(ws)
   write(ws, queryChainLengthMsg())
 
-  // query transactions pool only some time after chain query
   setTimeout(() => {
     broadcast(queryTransactionPoolMsg())
   }, 500)
-}
-
-const JSONToObject = <T>(data: string): T => {
-  try {
-    return JSON.parse(data)
-  } catch (e) {
-    console.log(e)
-    return null
-  }
 }
 
 const initMessageHandler = (ws: WebSocket) => {
@@ -94,8 +85,6 @@ const initMessageHandler = (ws: WebSocket) => {
           receivedTransactions.forEach((transaction: Transaction) => {
             try {
               handleReceivedTransaction(transaction)
-              // if no error is thrown, transaction was indeed added to the pool
-              // let's broadcast transaction pool
               broadCastTransactionPool()
             } catch (e) {
               console.log(e.message)
@@ -112,9 +101,15 @@ const initMessageHandler = (ws: WebSocket) => {
 const write = (ws: WebSocket, message: Message): void => ws.send(JSON.stringify(message))
 const broadcast = (message: Message): void => sockets.forEach(socket => write(socket, message))
 
-const queryChainLengthMsg = (): Message => ({ type: MessageType.QUERY_LATEST, data: null })
+const queryChainLengthMsg = (): Message => ({
+  type: MessageType.QUERY_LATEST,
+  data: null
+})
 
-const queryAllMsg = (): Message => ({ type: MessageType.QUERY_ALL, data: null })
+const queryAllMsg = (): Message => ({
+  type: MessageType.QUERY_ALL,
+  data: null
+})
 
 const responseChainMsg = (): Message => ({
   type: MessageType.RESPONSE_BLOCKCHAIN,
@@ -194,4 +189,4 @@ const broadCastTransactionPool = () => {
   broadcast(responseTransactionPoolMsg())
 }
 
-export { connectToPeers, broadcastLatest, broadCastTransactionPool, initP2PServer, getSockets }
+export { connectToPeers, broadcastLatest, broadCastTransactionPool, p2pServer, getSockets }

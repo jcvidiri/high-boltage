@@ -5,9 +5,9 @@
   "description": "",
   "main": "src/main.js",
   "scripts": {
-    "start": "npm run compile; node src/main.js",
+    "start": "npm run tsc; node src/main.js",
     "dev": "nodemon -e ts -w ./src -x 'npm start'",
-    "compile": "tsc"
+    "tsc": "tsc"
   },
   "repository": {
     "type": "git",

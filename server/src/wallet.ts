@@ -4,16 +4,15 @@ import * as _ from 'lodash'
 import { getPublicKey, getTransactionId, signTxIn, Transaction, TxIn, TxOut, UnspentTxOut } from './transaction'
 
 const EC = new ec('secp256k1')
+const privateKey = process.env.PRIVATE_KEY || 'wallet/private-key'
 
-const privateKeyLocation = process.env.PRIVATE_KEY || 'wallet/private_key'
-
-const getPrivateFromWallet = (): string => {
-  const buffer = readFileSync(privateKeyLocation, 'utf8')
+const getPrivateKey = (): string => {
+  const buffer = readFileSync(privateKey, 'utf8')
   return buffer.toString()
 }
 
 const getPublicFromWallet = (): string => {
-  const privateKey = getPrivateFromWallet()
+  const privateKey = getPrivateKey()
   const key = EC.keyFromPrivate(privateKey, 'hex')
   return key.getPublic().encode('hex')
 }
@@ -25,20 +24,13 @@ const generatePrivateKey = (): string => {
 }
 
 const initWallet = () => {
-  // let's not override existing private keys
-  if (existsSync(privateKeyLocation)) {
-    return
-  }
-  const newPrivateKey = generatePrivateKey()
+  if (existsSync(privateKey)) return
 
-  writeFileSync(privateKeyLocation, newPrivateKey)
-  console.log('new wallet with private key created to : %s', privateKeyLocation)
+  writeFileSync(privateKey, generatePrivateKey())
 }
 
 const deleteWallet = () => {
-  if (existsSync(privateKeyLocation)) {
-    unlinkSync(privateKeyLocation)
-  }
+  if (existsSync(privateKey)) unlinkSync(privateKey)
 }
 
 const getBalance = (address: string, unspentTxOuts: UnspentTxOut[]): number => {
@@ -143,7 +135,7 @@ const createTransaction = (
 export {
   createTransaction,
   getPublicFromWallet,
-  getPrivateFromWallet,
+  getPrivateKey,
   getBalance,
   generatePrivateKey,
   initWallet,
