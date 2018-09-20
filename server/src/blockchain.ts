@@ -21,7 +21,7 @@ class Block {
   public minterBalance: number
   public minterAddress: string
 
-  constructor (
+  constructor(
     index: number,
     hash: string,
     previousHash: string,
@@ -46,8 +46,8 @@ class Payload {
   public transactions: Transaction[]
   public measurements: Measurement[]
 
-  constructor (transactions: Transaction[], measurements: Measurement[]) {
-    ;(this.transactions = transactions), (this.measurements = measurements)
+  constructor(transactions: Transaction[], measurements: Measurement[]) {
+    ; (this.transactions = transactions), (this.measurements = measurements)
   }
 }
 

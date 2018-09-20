@@ -5,13 +5,18 @@
     "sourceMap": true
   },
   "include": [
+    "src/blockchain.ts",
     "src/main.ts",
-    "src/block.ts",
+    "src/measurement-pool.ts",
+    "src/measurement.ts",
     "src/p2p.ts",
-    "src/util.ts",
+    "src/routes.ts",
+    "src/transaction-pool.ts",
     "src/transaction.ts",
-    "src/wallet.ts",
-    "src/transactionPool.ts"
+    "src/utils.ts",
+    "src/wallet.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
