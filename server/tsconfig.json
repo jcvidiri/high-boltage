@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2015",
+    "sourceMap": true
+  },
+  "include": [
+    "src/blockchain.ts",
+    "src/main.ts",
+    "src/measurement-pool.ts",
+    "src/measurement.ts",
+    "src/p2p.ts",
+    "src/routes.ts",
+    "src/transaction-pool.ts",
+    "src/transaction.ts",
+    "src/utils.ts",
+    "src/wallet.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
