@@ -1,11 +1,19 @@
 import * as CryptoJS from 'crypto-js'
 import * as _ from 'lodash'
-import { broadcastLatest, broadCastTransactionPool } from './p2p'
-import { getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut } from './transaction'
-import { Measurement } from './measurement'
-import { addToTransactionPool, getTransactionPool, updateTransactionPool } from './transaction-pool'
-import { createTransaction, findUnspentTxOuts, getBalance, getPrivateKey, getPublicFromWallet } from './wallet'
-import { BigNumber } from 'bignumber.js'
+import {broadcastLatest, broadCastTransactionPool, broadCastMeasurementPool} from './p2p'
+import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
+import {Flow, Measurement} from './measurement'
+import {addToTransactionPool, getTransactionPool, updateTransactionPool} from './transaction-pool'
+import {addToMeasurementPool} from './measurement-pool'
+import {
+  createTransaction,
+  findUnspentTxOuts,
+  getBalance,
+  getPrivateKey,
+  getPublicFromWallet,
+  createMeasurement
+} from './wallet'
+import {BigNumber} from 'bignumber.js'
 
 const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
@@ -47,13 +55,13 @@ class Payload {
   public measurements: Measurement[]
 
   constructor(transactions: Transaction[], measurements: Measurement[]) {
-    ; (this.transactions = transactions), (this.measurements = measurements)
+    ;(this.transactions = transactions), (this.measurements = measurements)
   }
 }
 
 // todo change this
 const genesisTransaction: Transaction = {
-  txIns: [{ signature: '', txOutId: '', txOutIndex: 0 }],
+  txIns: [{signature: '', txOutId: '', txOutIndex: 0}],
   txOuts: [
     {
       address: 'someAddress1',
@@ -64,11 +72,13 @@ const genesisTransaction: Transaction = {
 }
 
 const genesisMeasurement: Measurement = {
-  msIns: [{ signature: '', msOutId: '', msOutIndex: 0 }],
-  msOuts: [
+  mtIns: [{signature: '', amount: 0, address: '', id: ''}],
+  mtOuts: [
     {
       address: 'someAddress1',
-      amount: 50
+      amount: 50,
+      id: '',
+      signature: ''
     }
   ],
   id: 'someId1'
@@ -79,7 +89,7 @@ const genesisBlock: Block = new Block(
   '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627',
   '',
   1537145550257,
-  { transactions: [genesisTransaction], measurements: [genesisMeasurement] },
+  {transactions: [genesisTransaction], measurements: [genesisMeasurement]},
   0,
   0,
   'someAddress1'
@@ -140,7 +150,7 @@ const getMyUnspentTransactionOutputs = () => {
 
 const generateNextBlock = () => {
   const coinbaseTx: Transaction = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1)
-  const blockData: Payload = { transactions: [coinbaseTx].concat(getTransactionPool()), measurements: [] }
+  const blockData: Payload = {transactions: [coinbaseTx].concat(getTransactionPool()), measurements: []}
   return generateRawNextBlock(blockData)
 }
 
@@ -157,7 +167,7 @@ const generatenextBlockWithTransaction = (receiverAddress: string, amount: numbe
     getUnspentTxOuts(),
     getTransactionPool()
   )
-  const blockData: Payload = { transactions: [coinbaseTx, tx], measurements: [] }
+  const blockData: Payload = {transactions: [coinbaseTx, tx], measurements: []}
   return generateRawNextBlock(blockData)
 }
 
@@ -368,6 +378,13 @@ const handleReceivedTransaction = (transaction: Transaction) => {
   addToTransactionPool(transaction, getUnspentTxOuts())
 }
 
+const sendMeasurement = (mtIns: Flow[], mtOuts: Flow[]): Measurement => {
+  const mt: Measurement = createMeasurement(mtIns, mtOuts, getPrivateKey())
+  addToMeasurementPool(mt)
+  broadCastMeasurementPool()
+  return mt
+}
+
 export {
   Block,
   Payload,
@@ -383,5 +400,6 @@ export {
   getAccountBalance,
   isValidBlockStructure,
   replaceChain,
-  addBlockToChain
+  addBlockToChain,
+  sendMeasurement
 }

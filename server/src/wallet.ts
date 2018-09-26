@@ -1,7 +1,8 @@
-import { ec } from 'elliptic'
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
+import {ec} from 'elliptic'
+import {existsSync, readFileSync, unlinkSync, writeFileSync} from 'fs'
 import * as _ from 'lodash'
-import { getPublicKey, getTransactionId, signTxIn, Transaction, TxIn, TxOut, UnspentTxOut } from './transaction'
+import {getPublicKey, getTransactionId, signTxIn, Transaction, TxIn, TxOut, UnspentTxOut} from './transaction'
+import {Measurement, Flow, getMeasurementId} from './measurement'
 
 const EC = new ec('secp256k1')
 const privateKey = process.env.PRIVATE_KEY || 'wallet/private-key'
@@ -51,7 +52,7 @@ const findTxOutsForAmount = (amount: number, myUnspentTxOuts: UnspentTxOut[]) =>
     currentAmount = currentAmount + myUnspentTxOut.amount
     if (currentAmount >= amount) {
       const leftOverAmount = currentAmount - amount
-      return { includedUnspentTxOuts, leftOverAmount }
+      return {includedUnspentTxOuts, leftOverAmount}
     }
   }
 
@@ -108,7 +109,7 @@ const createTransaction = (
   const myUnspentTxOuts = filterTxPoolTxs(myUnspentTxOutsA, txPool)
 
   // filter from unspentOutputs such inputs that are referenced in pool
-  const { includedUnspentTxOuts, leftOverAmount } = findTxOutsForAmount(amount, myUnspentTxOuts)
+  const {includedUnspentTxOuts, leftOverAmount} = findTxOutsForAmount(amount, myUnspentTxOuts)
 
   const toUnsignedTxIn = (unspentTxOut: UnspentTxOut) => {
     const txIn: TxIn = new TxIn()
@@ -132,6 +133,25 @@ const createTransaction = (
   return tx
 }
 
+const createMeasurement = (mtIns: Flow[], mtOuts: Flow[], privateKey: string): Measurement => {
+  const myAddress: string = getPublicKey(privateKey)
+
+  const mt: Measurement = new Measurement()
+  mt.mtIns = mtIns.map((mtIn: Flow) => {
+    // mtIn.id = CryptoJS.SHA256(timestamp + mtIn.address + mtIn.amount).toString()
+    // mtIn.signature = mtIn.signature ? mtIn.signature : signMt(mtIn, privateKey)
+    return mtIn
+  })
+  mt.mtOuts = mtOuts.map((mtOut: Flow) => {
+    // mtIn.id = CryptoJS.SHA256(timestamp + mtIn.address + mtIn.amount).toString()
+    // mtOut.signature = mtOut.signature ? mtOut.signature : signMt(mtOut, privateKey)
+    return mtOut
+  })
+  mt.id = getMeasurementId(mt)
+
+  return mt
+}
+
 export {
   createTransaction,
   getPublicFromWallet,
@@ -140,5 +160,6 @@ export {
   generatePrivateKey,
   initWallet,
   deleteWallet,
-  findUnspentTxOuts
+  findUnspentTxOuts,
+  createMeasurement
 }
