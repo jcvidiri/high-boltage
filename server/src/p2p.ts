@@ -1,5 +1,5 @@
 import * as WebSocket from 'ws'
-import { Server } from 'ws'
+import {Server} from 'ws'
 import {
   addBlockToChain,
   Block,
@@ -9,9 +9,9 @@ import {
   isValidBlockStructure,
   replaceChain
 } from './blockchain'
-import { Transaction } from './transaction'
-import { getTransactionPool } from './transaction-pool'
-import { JSONToObject } from './utils'
+import {Transaction} from './transaction'
+import {getTransactionPool} from './transaction-pool'
+import {JSONToObject} from './utils'
 
 const sockets: WebSocket[] = []
 
@@ -20,7 +20,8 @@ enum MessageType {
   QUERY_ALL = 1,
   RESPONSE_BLOCKCHAIN = 2,
   QUERY_TRANSACTION_POOL = 3,
-  RESPONSE_TRANSACTION_POOL = 4
+  RESPONSE_TRANSACTION_POOL = 4,
+  RESPONSE_MEASUREMENT_POOL = 5
 }
 
 class Message {
@@ -29,7 +30,7 @@ class Message {
 }
 
 const p2pServer = (port: number) => {
-  const server: Server = new WebSocket.Server({ port: port })
+  const server: Server = new WebSocket.Server({port: port})
   server.on('connection', (ws: WebSocket) => {
     initConnection(ws)
   })
@@ -131,6 +132,11 @@ const responseTransactionPoolMsg = (): Message => ({
   data: JSON.stringify(getTransactionPool())
 })
 
+const responseMeasurementPoolMsg = (): Message => ({
+  type: MessageType.RESPONSE_MEASUREMENT_POOL,
+  data: JSON.stringify(getTransactionPool())
+})
+
 const initErrorHandler = (ws: WebSocket) => {
   const closeConnection = (myWs: WebSocket) => {
     console.log('connection failed to peer: ' + myWs.url)
@@ -189,4 +195,8 @@ const broadCastTransactionPool = () => {
   broadcast(responseTransactionPoolMsg())
 }
 
-export { connectToPeers, broadcastLatest, broadCastTransactionPool, p2pServer, getSockets }
+const broadCastMeasurementPool = () => {
+  broadcast(responseMeasurementPoolMsg())
+}
+
+export {connectToPeers, broadcastLatest, broadCastTransactionPool, p2pServer, getSockets, broadCastMeasurementPool}
