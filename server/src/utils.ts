@@ -7,4 +7,10 @@ const JSONToObject = <T>(data: string): T => {
   }
 }
 
-export { JSONToObject }
+const toHexString = (byteArray): string => {
+  return Array.from(byteArray, (byte: any) => {
+    return ('0' + (byte & 0xff).toString(16)).slice(-2)
+  }).join('')
+}
+
+export {JSONToObject, toHexString}

@@ -10,12 +10,14 @@ import {
   getBlockchain,
   getMyUnspentTransactionOutputs,
   getUnspentTxOuts,
-  sendTransaction
+  sendTransaction,
+  sendMeasurement
 } from './blockchain'
-import { connectToPeers, getSockets } from './p2p'
-import { UnspentTxOut } from './transaction'
-import { getTransactionPool } from './transaction-pool'
-import { getPublicFromWallet } from './wallet'
+import {connectToPeers, getSockets} from './p2p'
+import {UnspentTxOut} from './transaction'
+import {getTransactionPool} from './transaction-pool'
+import {getMeasurementPool} from './measurement-pool'
+import {getPublicFromWallet} from './wallet'
 
 const app = express()
 app.use(bodyParser.json())
@@ -25,7 +27,7 @@ app.get('/blocks', (req, res) => {
 })
 
 app.get('/block/:hash', (req, res) => {
-  const block = _.find(getBlockchain(), { hash: req.params.hash })
+  const block = _.find(getBlockchain(), {hash: req.params.hash})
   res.send(block)
 })
 
@@ -33,13 +35,13 @@ app.get('/transaction/:id', (req, res) => {
   const tx = _(getBlockchain())
     .map(blocks => blocks.data)
     .flatten()
-    .find({ id: req.params.id })
+    .find({id: req.params.id})
   res.send(tx)
 })
 
 app.get('/address/:address', (req, res) => {
   const unspentTxOuts: UnspentTxOut[] = _.filter(getUnspentTxOuts(), uTxO => uTxO.address === req.params.address)
-  res.send({ unspentTxOuts: unspentTxOuts })
+  res.send({unspentTxOuts: unspentTxOuts})
 })
 
 app.get('/unspentTransactionOutputs', (req, res) => {
@@ -74,12 +76,12 @@ app.post('/mintBlock', (req, res) => {
 
 app.get('/balance', (req, res) => {
   const balance: number = getAccountBalance()
-  res.send({ balance: balance })
+  res.send({balance: balance})
 })
 
 app.get('/address', (req, res) => {
   const address: string = getPublicFromWallet()
-  res.send({ address: address })
+  res.send({address: address})
 })
 
 app.post('/mintTransaction', (req, res) => {
@@ -123,8 +125,30 @@ app.post('/addPeer', (req, res) => {
 })
 
 app.post('/stop', (req, res) => {
-  res.send({ msg: 'stopping server' })
+  res.send({msg: 'stopping server'})
   process.exit()
+})
+
+// MEASUREMENTS
+app.get('/measurementPool', (req, res) => {
+  res.send(getMeasurementPool())
+})
+
+app.post('/sendMeasurement', (req, res) => {
+  try {
+    // const id = req.body.id
+    const ins = req.body.mtIns
+    const outs = req.body.mtOuts
+
+    if (ins === undefined && outs === undefined) {
+      throw Error('invalid measurement')
+    }
+    const resp = sendMeasurement(ins, outs)
+    res.send(resp)
+  } catch (e) {
+    console.log(e.message)
+    res.status(400).send(e.message)
+  }
 })
 
 export default app

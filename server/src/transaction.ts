@@ -1,7 +1,8 @@
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
 import * as _ from 'lodash'
-import { Payload } from './blockchain'
+import {Payload} from './blockchain'
+import {toHexString} from './utils'
 const ec = new ecdsa.ec('secp256k1')
 const COINBASE_AMOUNT: number = 50
 
@@ -11,7 +12,7 @@ class UnspentTxOut {
   public readonly address: string
   public readonly amount: number
 
-  constructor (txOutId: string, txOutIndex: number, address: string, amount: number) {
+  constructor(txOutId: string, txOutIndex: number, address: string, amount: number) {
     this.txOutId = txOutId
     this.txOutIndex = txOutIndex
     this.address = address
@@ -29,7 +30,7 @@ class TxOut {
   public address: string
   public amount: number
 
-  constructor (address: string, amount: number) {
+  constructor(address: string, amount: number) {
     this.address = address
     this.amount = amount
   }
@@ -251,12 +252,6 @@ const processTransactions = (aPayload: Payload, aUnspentTxOuts: UnspentTxOut[], 
     return null
   }
   return updateUnspentTxOuts(aPayload.transactions, aUnspentTxOuts)
-}
-
-const toHexString = (byteArray): string => {
-  return Array.from(byteArray, (byte: any) => {
-    return ('0' + (byte & 0xff).toString(16)).slice(-2)
-  }).join('')
 }
 
 const getPublicKey = (aPrivateKey: string): string => {
