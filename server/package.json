@@ -7,7 +7,8 @@
   "scripts": {
     "start": "npm run tsc; node src/main.js",
     "dev": "nodemon -e ts -w ./src -x 'npm start'",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "test": "tsc; mocha -r ts-node/register ./tests/*.ts"
   },
   "repository": {
     "type": "git",
@@ -31,6 +32,8 @@
     "tslint": "^5.11.0"
   },
   "dependencies": {
+    "@types/chai": "^4.1.6",
+    "@types/mocha": "^5.2.5",
     "axios": "^0.16.2",
     "babel-preset-stage-0": "^6.24.1",
     "bignumber.js": "^7.2.1",

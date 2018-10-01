@@ -85,8 +85,6 @@ app.get('/address', (req, res) => {
 })
 
 app.post('/mintTransaction', (req, res) => {
-  console.log('\n --> req.body: ', req.body)
-
   const address = req.body.address
   const amount = req.body.amount
   try {
@@ -137,8 +135,6 @@ app.get('/measurementPool', (req, res) => {
 })
 
 app.post('/sendMeasurement', (req, res) => {
-  console.log('\n --> req.body: ', req.body)
-
   try {
     // const id = req.body.id
     const ins = req.body.mtIns

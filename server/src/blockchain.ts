@@ -64,20 +64,22 @@ const genesisTransaction: Transaction = {
   txIns: [{signature: '', txOutId: '', txOutIndex: 0}],
   txOuts: [
     {
-      address: 'someAddress1',
-      amount: 50
+      address:
+        '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0',
+      amount: 500
     }
   ],
-  id: 'someId1'
+  id: '60f5eb794e7e7133c2a64d741fd1ab76b877bd3158e3ca5d6942cfecedf2e41f'
 }
 
 const genesisMeasurement: Measurement = {
   mtIns: [{signature: '', amount: 0, address: '', id: ''}],
   mtOuts: [
     {
-      address: 'someAddress1',
-      amount: 50,
       id: '',
+      address:
+        '042421b025191c40c3e995519d80a9af95a4275b9741e8f833a30c001cee3fbaf65388923d373cecd20debd7461c54ed324b052dcbe52901166e4ecb4b00190057',
+      amount: 50,
       signature: ''
     }
   ],
@@ -88,11 +90,11 @@ const genesisBlock: Block = new Block(
   0,
   '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627',
   '',
-  1537145550257,
+  1537145550,
   {transactions: [genesisTransaction], measurements: [genesisMeasurement]},
   0,
-  0,
-  'someAddress1'
+  500,
+  '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0'
 )
 
 let blockchain: Block[] = [genesisBlock]
@@ -282,8 +284,8 @@ const hasValidHash = (block: Block): boolean => {
     !isBlockStakingValid(
       block.previousHash,
       block.minterAddress,
-      block.minterBalance,
       block.timestamp,
+      block.minterBalance,
       block.difficulty,
       block.index
     )
@@ -385,6 +387,18 @@ const sendMeasurement = (mtIns: Flow[], mtOuts: Flow[]): Measurement => {
   return mt
 }
 
+const mintBlock = (block: Block, count: number, callback: Function) => {
+  if (block) return callback(null, block)
+
+  setTimeout(function() {
+    // you can only mint a block per second due to timestamp
+    count++
+    block = generateNextBlock()
+    console.log('mintBlock no-block count: ', count)
+    return mintBlock(block, count, callback)
+  }, 1000)
+}
+
 export {
   Block,
   Payload,
@@ -401,5 +415,6 @@ export {
   isValidBlockStructure,
   replaceChain,
   addBlockToChain,
-  sendMeasurement
+  sendMeasurement,
+  mintBlock
 }

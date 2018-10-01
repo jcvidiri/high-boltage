@@ -4,7 +4,7 @@ import * as _ from 'lodash'
 import {Payload} from './blockchain'
 import {toHexString} from './utils'
 const ec = new ecdsa.ec('secp256k1')
-const COINBASE_AMOUNT: number = 50
+const COINBASE_AMOUNT: number = 500
 
 class UnspentTxOut {
   public readonly txOutId: string
@@ -325,13 +325,13 @@ const isValidTransactionStructure = (transaction: Transaction) => {
 const isValidAddress = (address: string): boolean => {
   if (address.length !== 130) {
     console.log(address)
-    console.log('invalid public key length')
+    console.log('invalid transaction public key length')
     return false
   } else if (address.match('^[a-fA-F0-9]+$') === null) {
-    console.log('public key must contain only hex characters')
+    console.log('transaction public key must contain only hex characters')
     return false
   } else if (!address.startsWith('04')) {
-    console.log('public key must start with 04')
+    console.log('transaction public key must start with 04')
     return false
   }
   return true

@@ -1,5 +1,5 @@
 import * as _ from 'lodash'
-import { Transaction, TxIn, UnspentTxOut, validateTransaction } from './transaction'
+import {Transaction, TxIn, UnspentTxOut, validateTransaction} from './transaction'
 
 let transactionPool: Transaction[] = []
 
@@ -7,6 +7,10 @@ const getTransactionPool = () => {
   return _.cloneDeep(transactionPool)
 }
 
+const cleanTransactionPool = () => {
+  // this is for test purposes only
+  transactionPool = []
+}
 const addToTransactionPool = (tx: Transaction, unspentTxOuts: UnspentTxOut[]) => {
   if (!validateTransaction(tx, unspentTxOuts)) {
     throw Error('Trying to add invalid tx to pool')
@@ -67,4 +71,4 @@ const isValidTxForPool = (tx: Transaction, aTtransactionPool: Transaction[]): bo
   return true
 }
 
-export { addToTransactionPool, getTransactionPool, updateTransactionPool }
+export {addToTransactionPool, getTransactionPool, updateTransactionPool, cleanTransactionPool}
