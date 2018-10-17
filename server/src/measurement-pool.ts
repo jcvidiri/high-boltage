@@ -7,6 +7,11 @@ const getMeasurementPool = () => {
   return _.cloneDeep(measurementPool)
 }
 
+const cleanMeasurementPool = () => {
+  // this is for test purposes only
+  measurementPool = []
+}
+
 const addToMeasurementPool = (mt: Measurement) => {
   // if (!validateMeasurement(mt)) {
   //   throw Error('Trying to add invalid mt to pool')
@@ -26,4 +31,4 @@ const addToMeasurementPool = (mt: Measurement) => {
 //   return false
 // }
 
-export {getMeasurementPool, addToMeasurementPool}
+export {getMeasurementPool, addToMeasurementPool, cleanMeasurementPool}

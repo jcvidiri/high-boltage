@@ -19,7 +19,7 @@ describe('Transaction test', function() {
     done()
   })
 
-  it('mintBlock. Expect ok.', done => {
+  it('mintBlock with transactions. Expect ok.', done => {
     cleanTransactionPool()
 
     const address =

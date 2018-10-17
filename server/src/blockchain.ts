@@ -21,13 +21,14 @@ const mintingWithoutCoinIndex = 100
 
 class Block {
   public index: number
-  public hash: string
+  public hash: string // merkleRoot
   public previousHash: string
   public timestamp: number
   public data: Payload
   public difficulty: number
   public minterBalance: number
   public minterAddress: string
+  public version: string
 
   constructor(
     index: number,
