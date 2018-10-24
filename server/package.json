@@ -6,6 +6,8 @@
   "main": "src/main.js",
   "scripts": {
     "start": "npm run tsc; node src/main.js",
+    "start-multiple": "make start-multiple",
+    "stop-multiple": "make stop-multiple",
     "dev": "nodemon -e ts -w ./src -x 'npm start'",
     "tsc": "tsc",
     "test": "tsc; mocha -r ts-node/register ./tests/*.ts"

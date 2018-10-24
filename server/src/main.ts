@@ -2,11 +2,13 @@ import * as bodyParser from 'body-parser'
 import * as express from 'express'
 import * as _ from 'lodash'
 import routes from './routes'
-import { p2pServer } from './p2p'
-import { initWallet } from './wallet'
+import {p2pServer} from './p2p'
+import {initWallet} from './wallet'
 
-const httpPort: number = parseInt(process.env.HTTP_PORT) || 3001
-const p2pPort: number = parseInt(process.env.P2P_PORT) || 6001
+const httpPort: number = (process.argv && parseInt(process.argv[2])) || parseInt(process.env.HTTP_PORT) || 3001
+const p2pPort: number = (process.argv && parseInt(process.argv[3])) || parseInt(process.env.P2P_PORT) || 6001
+const instanceNumber: number = (process.argv && parseInt(process.argv[4])) || 1
+const totalInstances: number = (process.argv && parseInt(process.argv[5])) || 1
 
 const httpServer = (port: number) => {
   const app = express()
@@ -26,5 +28,5 @@ const httpServer = (port: number) => {
 }
 
 httpServer(httpPort)
-p2pServer(p2pPort)
+p2pServer(p2pPort, instanceNumber, totalInstances)
 initWallet()
