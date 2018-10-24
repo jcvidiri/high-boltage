@@ -29,11 +29,23 @@ class Message {
   public data: any
 }
 
-const p2pServer = (port: number) => {
+const p2pServer = (port: number, instanceNumber: number, totalInstances: number) => {
   const server: Server = new WebSocket.Server({port: port})
   server.on('connection', (ws: WebSocket) => {
     initConnection(ws)
   })
+
+  setTimeout(() => {
+    if (instanceNumber && totalInstances > 1) {
+      let i = 1
+      while (i <= totalInstances) {
+        if (i != instanceNumber) {
+          connectToPeer(`ws://localhost:${port - instanceNumber + i}`)
+        }
+        i++
+      }
+    }
+  }, 1000)
   console.log('listening websocket p2p port on: ' + port)
 }
 
@@ -181,7 +193,7 @@ const broadcastLatest = (): void => {
   broadcast(responseLatestMsg())
 }
 
-const connectToPeers = (newPeer: string): void => {
+const connectToPeer = (newPeer: string): void => {
   const ws: WebSocket = new WebSocket(newPeer)
   ws.on('open', () => {
     initConnection(ws)
@@ -199,4 +211,4 @@ const broadCastMeasurementPool = () => {
   broadcast(responseMeasurementPoolMsg())
 }
 
-export {connectToPeers, broadcastLatest, broadCastTransactionPool, p2pServer, getSockets, broadCastMeasurementPool}
+export {connectToPeer, broadcastLatest, broadCastTransactionPool, p2pServer, getSockets, broadCastMeasurementPool}

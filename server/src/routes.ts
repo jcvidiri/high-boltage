@@ -13,7 +13,7 @@ import {
   sendTransaction,
   sendMeasurement
 } from './blockchain'
-import {connectToPeers, getSockets} from './p2p'
+import {connectToPeer, getSockets} from './p2p'
 import {UnspentTxOut} from './transaction'
 import {getTransactionPool} from './transaction-pool'
 import {getMeasurementPool} from './measurement-pool'
@@ -120,7 +120,7 @@ app.get('/peers', (req, res) => {
   res.send(getSockets().map((s: any) => s._socket.remoteAddress + ':' + s._socket.remotePort))
 })
 app.post('/addPeer', (req, res) => {
-  connectToPeers(req.body.peer)
+  connectToPeer(req.body.peer)
   res.send()
 })
 
