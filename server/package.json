@@ -10,7 +10,8 @@
     "stop-multiple": "make stop-multiple",
     "dev": "nodemon -e ts -w ./src -x 'npm start'",
     "tsc": "tsc",
-    "test": "tsc; mocha -r ts-node/register ./tests/*.ts"
+    "test": "tsc; mocha -r ts-node/register ./tests/*.ts",
+    "log": "make log"
   },
   "repository": {
     "type": "git",

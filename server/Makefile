@@ -8,4 +8,6 @@ start-multiple:
   done;
 	forever list;
 stop-multiple:
-	forever stopall
+	forever stopall;
+log:
+	tail -n 30 -f /Users/juancruz/.forever/hb-$(HTTP_PORT)-$(P2P_PORT).log ;
