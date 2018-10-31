@@ -48,3 +48,9 @@ npm run start-multiple $HTTP_PORT $P2P_PORT $INSTANCES
 ```bash
 npm run stop-multiple
 ```
+
+### Watch logs
+```bash
+npm run log $HTTP_PORT $P2P_PORT
+```
+> i.e npm run log HTTP_PORT=3000 P2P_PORT=6000
