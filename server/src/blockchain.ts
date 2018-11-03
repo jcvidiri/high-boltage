@@ -3,14 +3,14 @@ import * as _ from 'lodash'
 import {broadcastLatest, broadCastTransactionPool, broadCastMeasurementPool} from './p2p'
 import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
 import {Flow, Measurement} from './measurement'
-import {addToTransactionPool, getTransactionPool, updateTransactionPool} from './transaction-pool'
+import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
 import {addToMeasurementPool} from './measurement-pool'
 import {
   createTransaction,
   findUnspentTxOuts,
   getBalance,
   getPrivateKey,
-  getPublicFromWallet,
+  $getPublicFromWallet,
   createMeasurement
 } from './wallet'
 import {BigNumber} from 'bignumber.js'
@@ -100,9 +100,9 @@ const genesisBlock: Block = new Block(
 let blockchain: Block[] = [genesisBlock]
 let unspentTxOuts: UnspentTxOut[] = processTransactions(blockchain[0].data, [], 0)
 
-const getBlockchain = (): Block[] => blockchain
+const $blockchain = (): Block[] => blockchain
 
-const getUnspentTxOuts = (): UnspentTxOut[] => _.cloneDeep(unspentTxOuts)
+const $unspentTxOuts = (): UnspentTxOut[] => _.cloneDeep(unspentTxOuts)
 
 const setUnspentTxOuts = (newUnspentTxOut: UnspentTxOut[]) => {
   unspentTxOuts = newUnspentTxOut
@@ -133,9 +133,9 @@ const getAdjustedDifficulty = (latestBlock: Block, aBlockchain: Block[]) => {
 
 const getCurrentTimestamp = (): number => Math.round(new Date().getTime() / 1000)
 
-const generateRawNextBlock = (blockData: Payload) => {
+const $generateRawNextBlock = (blockData: Payload) => {
   const previousBlock: Block = getLatestBlock()
-  const difficulty: number = getDifficulty(getBlockchain())
+  const difficulty: number = getDifficulty($blockchain())
   const nextIndex: number = previousBlock.index + 1
   const newBlock: Block = findBlock(nextIndex, previousBlock.hash, blockData, difficulty)
   if (addBlockToChain(newBlock)) {
@@ -146,31 +146,31 @@ const generateRawNextBlock = (blockData: Payload) => {
   }
 }
 
-const getMyUnspentTransactionOutputs = () => {
-  return findUnspentTxOuts(getPublicFromWallet(), getUnspentTxOuts())
+const $myUnspentTransactionOutputs = () => {
+  return findUnspentTxOuts($getPublicFromWallet(), $unspentTxOuts())
 }
 
-const generateNextBlock = () => {
-  const coinbaseTx: Transaction = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1)
-  const blockData: Payload = {transactions: [coinbaseTx].concat(getTransactionPool()), measurements: []}
-  return generateRawNextBlock(blockData)
+const $generateNextBlock = () => {
+  const coinbaseTx: Transaction = getCoinbaseTransaction($getPublicFromWallet(), getLatestBlock().index + 1)
+  const blockData: Payload = {transactions: [coinbaseTx].concat($transactionPool()), measurements: []}
+  return $generateRawNextBlock(blockData)
 }
 
-const generatenextBlockWithTransaction = (receiverAddress: string, amount: number) => {
+const $mintTransaction = (receiverAddress: string, amount: number) => {
   if (!isValidAddress(receiverAddress)) throw Error('invalid address')
 
   if (typeof amount !== 'number') throw Error('invalid amount')
 
-  const coinbaseTx: Transaction = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1)
+  const coinbaseTx: Transaction = getCoinbaseTransaction($getPublicFromWallet(), getLatestBlock().index + 1)
   const tx: Transaction = createTransaction(
     receiverAddress,
     amount,
     getPrivateKey(),
-    getUnspentTxOuts(),
-    getTransactionPool()
+    $unspentTxOuts(),
+    $transactionPool()
   )
   const blockData: Payload = {transactions: [coinbaseTx, tx], measurements: []}
-  return generateRawNextBlock(blockData)
+  return $generateRawNextBlock(blockData)
 }
 
 const findBlock = (index: number, previousHash: string, data: Payload, difficulty: number): Block => {
@@ -184,10 +184,12 @@ const findBlock = (index: number, previousHash: string, data: Payload, difficult
         timestamp,
         data,
         difficulty,
-        getAccountBalance(),
-        getPublicFromWallet()
+        $getAccountBalance(),
+        $getPublicFromWallet()
       )
-      if (isBlockStakingValid(previousHash, getPublicFromWallet(), timestamp, getAccountBalance(), difficulty, index)) {
+      if (
+        isBlockStakingValid(previousHash, $getPublicFromWallet(), timestamp, $getAccountBalance(), difficulty, index)
+      ) {
         return new Block(
           index,
           hash,
@@ -195,8 +197,8 @@ const findBlock = (index: number, previousHash: string, data: Payload, difficult
           timestamp,
           data,
           difficulty,
-          getAccountBalance(),
-          getPublicFromWallet()
+          $getAccountBalance(),
+          $getPublicFromWallet()
         )
       }
       pastTimestamp = timestamp
@@ -204,13 +206,13 @@ const findBlock = (index: number, previousHash: string, data: Payload, difficult
   }
 }
 
-const getAccountBalance = (): number => {
-  return getBalance(getPublicFromWallet(), getUnspentTxOuts())
+const $getAccountBalance = (): number => {
+  return getBalance($getPublicFromWallet(), $unspentTxOuts())
 }
 
-const sendTransaction = (address: string, amount: number): Transaction => {
-  const tx: Transaction = createTransaction(address, amount, getPrivateKey(), getUnspentTxOuts(), getTransactionPool())
-  addToTransactionPool(tx, getUnspentTxOuts())
+const $sendTransaction = (address: string, amount: number): Transaction => {
+  const tx: Transaction = createTransaction(address, amount, getPrivateKey(), $unspentTxOuts(), $transactionPool())
+  addToTransactionPool(tx, $unspentTxOuts())
   broadCastTransactionPool()
   return tx
 }
@@ -351,7 +353,7 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
 
 const addBlockToChain = (newBlock: Block): boolean => {
   if (isValidNewBlock(newBlock, getLatestBlock())) {
-    const retVal: UnspentTxOut[] = processTransactions(newBlock.data, getUnspentTxOuts(), newBlock.index)
+    const retVal: UnspentTxOut[] = processTransactions(newBlock.data, $unspentTxOuts(), newBlock.index)
     if (retVal === null) {
       console.log('block is not valid in terms of transactions')
       return false
@@ -368,7 +370,7 @@ const addBlockToChain = (newBlock: Block): boolean => {
 const replaceChain = (newBlocks: Block[]) => {
   const aUnspentTxOuts = isValidChain(newBlocks)
   const validChain: boolean = aUnspentTxOuts !== null
-  if (validChain && getAccumulatedDifficulty(newBlocks) > getAccumulatedDifficulty(getBlockchain())) {
+  if (validChain && getAccumulatedDifficulty(newBlocks) > getAccumulatedDifficulty($blockchain())) {
     blockchain = newBlocks
     setUnspentTxOuts(aUnspentTxOuts)
     updateTransactionPool(unspentTxOuts)
@@ -377,10 +379,10 @@ const replaceChain = (newBlocks: Block[]) => {
 }
 
 const handleReceivedTransaction = (transaction: Transaction) => {
-  addToTransactionPool(transaction, getUnspentTxOuts())
+  addToTransactionPool(transaction, $unspentTxOuts())
 }
 
-const sendMeasurement = (mtIns: Flow[], mtOuts: Flow[]): Measurement => {
+const $sendMeasurement = (mtIns: Flow[], mtOuts: Flow[]): Measurement => {
   const mt: Measurement = createMeasurement(mtIns, mtOuts, getPrivateKey())
   addToMeasurementPool(mt)
   broadCastMeasurementPool()
@@ -393,7 +395,7 @@ const mintBlock = (block: Block, count: number, callback: Function) => {
   setTimeout(function() {
     // you can only mint a block per second due to timestamp
     count++
-    block = generateNextBlock()
+    block = $generateNextBlock()
     console.log('mintBlock no-block count: ', count)
     return mintBlock(block, count, callback)
   }, 1000)
@@ -402,19 +404,19 @@ const mintBlock = (block: Block, count: number, callback: Function) => {
 export {
   Block,
   Payload,
-  getBlockchain,
-  getUnspentTxOuts,
+  $blockchain,
+  $unspentTxOuts,
   getLatestBlock,
-  sendTransaction,
-  generateRawNextBlock,
-  generateNextBlock,
-  generatenextBlockWithTransaction,
+  $sendTransaction,
+  $generateRawNextBlock,
+  $generateNextBlock,
+  $mintTransaction,
   handleReceivedTransaction,
-  getMyUnspentTransactionOutputs,
-  getAccountBalance,
+  $myUnspentTransactionOutputs,
+  $getAccountBalance,
   isValidBlockStructure,
   replaceChain,
   addBlockToChain,
-  sendMeasurement,
+  $sendMeasurement,
   mintBlock
 }

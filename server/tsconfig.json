@@ -2,21 +2,24 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2015",
-    "sourceMap": true
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": [
+      "es5",
+      "es6",
+      "dom",
+      "es2015.core",
+      "es2015.collection",
+      "es2015.generator",
+      "es2015.iterable",
+      "es2015.promise",
+      "es2015.proxy",
+      "es2015.reflect",
+      "es2015.symbol",
+      "es2015.symbol.wellknown",
+      "esnext.asynciterable"
+    ]
   },
-  "include": [
-    "src/blockchain.ts",
-    "src/main.ts",
-    "src/measurement-pool.ts",
-    "src/measurement.ts",
-    "src/p2p.ts",
-    "src/routes.ts",
-    "src/transaction-pool.ts",
-    "src/transaction.ts",
-    "src/utils.ts",
-    "src/wallet.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*.ts", "src/graph2/**/*.ts"],
+  "exclude": ["node_modules"]
 }
