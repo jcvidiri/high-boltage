@@ -12,7 +12,7 @@ const getPrivateKey = (): string => {
   return buffer.toString()
 }
 
-const getPublicFromWallet = (): string => {
+const $getPublicFromWallet = (): string => {
   const privateKey = getPrivateKey()
   const key = EC.keyFromPrivate(privateKey, 'hex')
   return key.getPublic().encode('hex')
@@ -154,7 +154,7 @@ const createMeasurement = (mtIns: Flow[], mtOuts: Flow[], privateKey: string): M
 
 export {
   createTransaction,
-  getPublicFromWallet,
+  $getPublicFromWallet,
   getPrivateKey,
   getBalance,
   generatePrivateKey,

@@ -3,7 +3,7 @@ import {Measurement} from './measurement'
 
 let measurementPool: Measurement[] = []
 
-const getMeasurementPool = () => {
+const $measurementPool = () => {
   return _.cloneDeep(measurementPool)
 }
 
@@ -20,10 +20,10 @@ const addToMeasurementPool = (mt: Measurement) => {
 }
 
 // const isMtDuplicated = (mt: Measurement): boolean => {
-//   // return _.find(getMeasurementPool(), m => {
+//   // return _.find($measurementPool(), m => {
 //   //   return m.id === mt.id
 //   //   })
 //   return false
 // }
 
-export {getMeasurementPool, addToMeasurementPool}
+export {$measurementPool, addToMeasurementPool}

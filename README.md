@@ -23,7 +23,7 @@ npm run test
 ### Start a single node:
 
 ```bash
-npm start $HTTP_PORT $P2P_PORT
+npm start $h $p
 ```
 
 > i.e. `npm start 3000 6000`
@@ -31,10 +31,10 @@ npm start $HTTP_PORT $P2P_PORT
 ### Start multiple nodes:
 
 ```bash
-npm run start-multiple $HTTP_PORT $P2P_PORT $INSTANCES
+npm run start-multiple $h $p $i
 ```
 
-> Http and p2p ports will be the following `n` port numbers where `n` is the initial port + (instance number - 1). For example, `npm run start-multiple HTTP_PORT=3000 P2P_PORT=6000 INSTANCES=4` will generate the following instances: 
+> Http and p2p ports will be the following `n` port numbers where `n` is the initial port + (instance number - 1). For example, `npm run start-multiple h=3000 p=6000 i=4` will generate the following instances: 
 
 | uid          | http | p2p  | instance | total instances |
 | ------------ | ---- | ---- | -------- | --------------- |
@@ -51,6 +51,6 @@ npm run stop-multiple
 
 ### Watch logs
 ```bash
-npm run log $HTTP_PORT $P2P_PORT
+npm run log $h $p
 ```
-> i.e npm run log HTTP_PORT=3000 P2P_PORT=6000
+> i.e npm run log h=3000 p=6000

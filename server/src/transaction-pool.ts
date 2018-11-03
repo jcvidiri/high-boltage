@@ -3,7 +3,7 @@ import {Transaction, TxIn, UnspentTxOut, validateTransaction} from './transactio
 
 let transactionPool: Transaction[] = []
 
-const getTransactionPool = () => {
+const $transactionPool = () => {
   return _.cloneDeep(transactionPool)
 }
 
@@ -71,4 +71,4 @@ const isValidTxForPool = (tx: Transaction, aTtransactionPool: Transaction[]): bo
   return true
 }
 
-export {addToTransactionPool, getTransactionPool, updateTransactionPool, cleanTransactionPool}
+export {addToTransactionPool, $transactionPool, updateTransactionPool, cleanTransactionPool}

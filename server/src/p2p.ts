@@ -3,14 +3,14 @@ import {Server} from 'ws'
 import {
   addBlockToChain,
   Block,
-  getBlockchain,
+  $blockchain,
   getLatestBlock,
   handleReceivedTransaction,
   isValidBlockStructure,
   replaceChain
 } from './blockchain'
 import {Transaction} from './transaction'
-import {getTransactionPool} from './transaction-pool'
+import {$transactionPool} from './transaction-pool'
 import {JSONToObject} from './utils'
 
 const sockets: WebSocket[] = []
@@ -40,7 +40,7 @@ const p2pServer = (port: number, instanceNumber: number, totalInstances: number)
       let i = 1
       while (i <= totalInstances) {
         if (i != instanceNumber) {
-          connectToPeer(`ws://localhost:${port - instanceNumber + i}`)
+          $connectToPeer(`ws://localhost:${port - instanceNumber + i}`)
         }
         i++
       }
@@ -49,7 +49,7 @@ const p2pServer = (port: number, instanceNumber: number, totalInstances: number)
   console.log('listening websocket p2p port on: ' + port)
 }
 
-const getSockets = () => sockets
+const $getSockets = () => sockets
 
 const initConnection = (ws: WebSocket) => {
   sockets.push(ws)
@@ -126,7 +126,7 @@ const queryAllMsg = (): Message => ({
 
 const responseChainMsg = (): Message => ({
   type: MessageType.RESPONSE_BLOCKCHAIN,
-  data: JSON.stringify(getBlockchain())
+  data: JSON.stringify($blockchain())
 })
 
 const responseLatestMsg = (): Message => ({
@@ -141,12 +141,12 @@ const queryTransactionPoolMsg = (): Message => ({
 
 const responseTransactionPoolMsg = (): Message => ({
   type: MessageType.RESPONSE_TRANSACTION_POOL,
-  data: JSON.stringify(getTransactionPool())
+  data: JSON.stringify($transactionPool())
 })
 
 const responseMeasurementPoolMsg = (): Message => ({
   type: MessageType.RESPONSE_MEASUREMENT_POOL,
-  data: JSON.stringify(getTransactionPool())
+  data: JSON.stringify($transactionPool())
 })
 
 const initErrorHandler = (ws: WebSocket) => {
@@ -193,13 +193,14 @@ const broadcastLatest = (): void => {
   broadcast(responseLatestMsg())
 }
 
-const connectToPeer = (newPeer: string): void => {
+const $connectToPeer = (newPeer: string): void => {
   const ws: WebSocket = new WebSocket(newPeer)
   ws.on('open', () => {
     initConnection(ws)
+    return true
   })
   ws.on('error', () => {
-    console.log('connection failed')
+    return false
   })
 }
 
@@ -211,4 +212,4 @@ const broadCastMeasurementPool = () => {
   broadcast(responseMeasurementPoolMsg())
 }
 
-export {connectToPeer, broadcastLatest, broadCastTransactionPool, p2pServer, getSockets, broadCastMeasurementPool}
+export {$connectToPeer, broadcastLatest, broadCastTransactionPool, p2pServer, $getSockets, broadCastMeasurementPool}
