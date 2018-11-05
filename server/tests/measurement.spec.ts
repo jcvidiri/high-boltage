@@ -1,8 +1,8 @@
 import {expect} from 'chai'
 import {describe, it} from 'mocha'
 
-import {sendMeasurement, mintBlock} from '../src/blockchain'
-import {getMeasurementPool, cleanMeasurementPool} from '../src/measurement-pool'
+import {$sendMeasurement, mintBlock} from '../src/blockchain'
+import {$measurementPool, $cleanMeasurementPool} from '../src/measurement-pool'
 
 describe('Measurement test', function() {
   const flowIn = {
@@ -21,10 +21,10 @@ describe('Measurement test', function() {
     signature: 'somesig2'
   }
 
-  it('sendMeasurement. Expect ok.', done => {
-    sendMeasurement([flowIn], [flowOut])
+  it('$sendMeasurement. Expect ok.', done => {
+    $sendMeasurement([flowIn], [flowOut])
 
-    const mtPool = getMeasurementPool()
+    const mtPool = $measurementPool()
 
     expect(mtPool).to.be.an('array')
     expect(mtPool[0]).to.have.property('mtOuts')
@@ -35,19 +35,18 @@ describe('Measurement test', function() {
   })
 
   it('mintBlock with measurements. Expect ok.', done => {
-    cleanMeasurementPool()
-    sendMeasurement([flowIn], [flowOut])
+    $cleanMeasurementPool()
+    $sendMeasurement([flowIn], [flowOut])
 
     let count = 0
     let block
     mintBlock(block, count, (err, block) => {
-      console.log('\n --> mintBlock err, block: ', err, block)
-
-      // expect(err).to.be.null
-      // expect(block).to.have.property('data')
-      // expect(block.data).to.have.property('transactions')
-      // expect(block.data.transactions[1]).to.have.property('txOuts')
-      // expect(block.data.transactions[1].txOuts[0]).to.deep.include({address, amount})
+      expect(err).to.be.null
+      expect(block).to.have.property('data')
+      expect(block.data).to.have.property('measurements')
+      // todo check this
+      // expect(block.data.measurements[1]).to.have.property('txOuts')
+      // expect(block.data.measurements[1].txOuts[0]).to.deep.include({address, amount})
       done()
     })
   })

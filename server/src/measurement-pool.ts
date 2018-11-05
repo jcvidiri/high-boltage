@@ -1,18 +1,18 @@
 import * as _ from 'lodash'
-import {Measurement} from './measurement'
+import {Measurement, Flow} from './measurement'
 
 let measurementPool: Measurement[] = []
 
-const getMeasurementPool = () => {
+const $measurementPool = () => {
   return _.cloneDeep(measurementPool)
 }
 
-const cleanMeasurementPool = () => {
+const $cleanMeasurementPool = () => {
   // this is for test purposes only
   measurementPool = []
 }
 
-const addToMeasurementPool = (mt: Measurement) => {
+const $addToMeasurementPool = (mt: Measurement) => {
   // if (!validateMeasurement(mt)) {
   //   throw Error('Trying to add invalid mt to pool')
   // }
@@ -24,11 +24,35 @@ const addToMeasurementPool = (mt: Measurement) => {
   measurementPool.push(mt)
 }
 
+const hasMtIn = (mtIn: Flow, unspentMtOuts: Measurement[]): boolean => {
+  // const foundMtIn = unspentMtOuts.find((uMtO: Flow) => {
+  //   return uMtO.txOutId === mtIn.txOutId && uMtO.txOutIndex === mtIn.txOutIndex
+  // })
+  // return foundMtIn !== undefined
+  return true
+}
+
+const $updateMeasurementsPool = (unspentMtOuts: Measurement[]) => {
+  const invalidMts = []
+  for (const mt of measurementPool) {
+    for (const mtIn of mt.mtIns) {
+      if (!hasMtIn(mtIn, unspentMtOuts)) {
+        invalidMts.push(mt)
+        break
+      }
+    }
+  }
+  if (invalidMts.length > 0) {
+    // console.log('removing the following transactions from txPool: %s', JSON.stringify(invalidMts))
+    measurementPool = _.without(measurementPool, ...invalidMts)
+  }
+}
+
 // const isMtDuplicated = (mt: Measurement): boolean => {
-//   // return _.find(getMeasurementPool(), m => {
+//   // return _.find($measurementPool(), m => {
 //   //   return m.id === mt.id
 //   //   })
 //   return false
 // }
 
-export {getMeasurementPool, addToMeasurementPool, cleanMeasurementPool}
+export {$measurementPool, $addToMeasurementPool, $cleanMeasurementPool, $updateMeasurementsPool}

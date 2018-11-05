@@ -3,7 +3,7 @@ import {Transaction, TxIn, UnspentTxOut, validateTransaction} from './transactio
 
 let transactionPool: Transaction[] = []
 
-const getTransactionPool = () => {
+const $transactionPool = () => {
   return _.cloneDeep(transactionPool)
 }
 
@@ -19,7 +19,7 @@ const addToTransactionPool = (tx: Transaction, unspentTxOuts: UnspentTxOut[]) =>
   if (!isValidTxForPool(tx, transactionPool)) {
     throw Error('Trying to add invalid tx to pool')
   }
-  console.log('adding to txPool: %s', JSON.stringify(tx))
+  // console.log('adding to txPool: %s', JSON.stringify(tx))
   transactionPool.push(tx)
 }
 
@@ -41,7 +41,7 @@ const updateTransactionPool = (unspentTxOuts: UnspentTxOut[]) => {
     }
   }
   if (invalidTxs.length > 0) {
-    console.log('removing the following transactions from txPool: %s', JSON.stringify(invalidTxs))
+    // console.log('removing the following transactions from txPool: %s', JSON.stringify(invalidTxs))
     transactionPool = _.without(transactionPool, ...invalidTxs)
   }
 }
@@ -64,11 +64,11 @@ const isValidTxForPool = (tx: Transaction, aTtransactionPool: Transaction[]): bo
 
   for (const txIn of tx.txIns) {
     if (containsTxIn(txPoolIns, txIn)) {
-      console.log('txIn already found in the txPool')
+      // console.log('txIn already found in the txPool')
       return false
     }
   }
   return true
 }
 
-export {addToTransactionPool, getTransactionPool, updateTransactionPool, cleanTransactionPool}
+export {addToTransactionPool, $transactionPool, updateTransactionPool, cleanTransactionPool}

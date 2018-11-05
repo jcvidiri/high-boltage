@@ -1,0 +1,8 @@
+type Mutation {
+  addPeer(peer: String): Boolean
+  mintBlock: Block
+  mintRawBlock(blockData: PayloadInput): Block
+  mintTransaction(transaction: TransactionInput!): Block
+  sendTransaction(transaction: TransactionInput!): Transaction
+  sendMeasurement(measurement: MeasurementInput!): Measurement
+}

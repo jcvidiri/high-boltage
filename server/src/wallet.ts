@@ -12,7 +12,7 @@ const getPrivateKey = (): string => {
   return buffer.toString()
 }
 
-const getPublicFromWallet = (): string => {
+const $getPublicFromWallet = (): string => {
   const privateKey = getPrivateKey()
   const key = EC.keyFromPrivate(privateKey, 'hex')
   return key.getPublic().encode('hex')
@@ -102,7 +102,7 @@ const createTransaction = (
   unspentTxOuts: UnspentTxOut[],
   txPool: Transaction[]
 ): Transaction => {
-  console.log('txPool: %s', JSON.stringify(txPool))
+  // console.log('txPool: %s', JSON.stringify(txPool))
   const myAddress: string = getPublicKey(privateKey)
   const myUnspentTxOutsA = unspentTxOuts.filter((uTxO: UnspentTxOut) => uTxO.address === myAddress)
 
@@ -154,7 +154,7 @@ const createMeasurement = (mtIns: Flow[], mtOuts: Flow[], privateKey: string): M
 
 export {
   createTransaction,
-  getPublicFromWallet,
+  $getPublicFromWallet,
   getPrivateKey,
   getBalance,
   generatePrivateKey,

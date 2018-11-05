@@ -1,0 +1,20 @@
+input TransactionInput {
+  addres: String!
+  amount: String!
+}
+
+input MeasurementInput {
+  mtIns: [FlowInput]
+  mtOuts: [FlowInput]
+}
+
+input PayloadInput {
+  transactions: [TransactionInput]
+  measurements: [MeasurementInput]
+}
+
+input FlowInput {
+  amount: String
+  address: String
+  signature: String
+}

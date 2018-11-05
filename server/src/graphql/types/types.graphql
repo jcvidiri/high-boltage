@@ -1,0 +1,52 @@
+type Block {
+  hash: String
+  data: Payload
+  index: String
+  timestamp: String
+  difficulty: String
+  previousHash: String
+  minterBalance: String
+  minterAddress: String
+}
+
+type Payload {
+  transactions: [Transaction]
+  measurements: [Measurement]
+}
+
+type Transaction {
+  id: String
+  txIns: [TxIn]
+  txOuts: [TxOut]
+}
+
+type TxIn {
+  txOutId: String
+  signature: String
+  txOutIndex: String
+}
+
+type TxOut {
+  address: String
+  amount: String
+}
+
+type Measurement {
+  id: String
+  mtIns: [Flow]
+  mtOuts: [Flow]
+}
+
+type Flow {
+  id: String
+  amount: String
+  address: String
+  signature: String
+}
+
+type UnspentTxOut {
+  amount: String
+  txOutId: String
+  address: String
+  txOutIndex: String
+}
