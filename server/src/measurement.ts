@@ -43,8 +43,15 @@ const validateFlow = (flow: Flow): boolean => {
   return true
 }
 
-const processMeasurements = (measurements: Measurement[], blockIndex: number) => {
+const $processMeasurements = (measurements: Measurement[]): Measurement[] => {
   if (!validateBlockMeasurements(measurements)) return null
+
+  return $updateMeasurements(measurements)
+}
+
+const $updateMeasurements = (measurements: Measurement[]): Measurement[] => {
+  // todo update measurements
+  return measurements
 }
 
 const isValidMtInStructure = (mtIn: Flow): boolean => {
@@ -88,14 +95,14 @@ const isValidMeasurementStructure = (measurement: Measurement) => {
 // valid address is a valid ecdsa public key in the 04 + X-coordinate + Y-coordinate format
 const isValidAddress = (address: string): boolean => {
   if (address.length !== 130) {
-    console.log(address)
-    console.log('invalid measurement public key length')
+    // console.log(address)
+    // console.log('invalid measurement public key length')
     return false
   } else if (address.match('^[a-fA-F0-9]+$') === null) {
-    console.log('measurement public key must contain only hex characters')
+    // console.log('measurement public key must contain only hex characters')
     return false
   } else if (!address.startsWith('04')) {
-    console.log('measurement public key must start with 04')
+    // console.log('measurement public key must start with 04')
     return false
   }
   return true
@@ -120,4 +127,4 @@ const getMeasurementId = (measurement: Measurement): string => {
   return CryptoJS.SHA256(mtInContent + mtOutContent).toString()
 }
 
-export {Measurement, Flow, signMt, getMeasurementId}
+export {Measurement, Flow, signMt, getMeasurementId, $processMeasurements}

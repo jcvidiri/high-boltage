@@ -2,9 +2,9 @@ import * as CryptoJS from 'crypto-js'
 import * as _ from 'lodash'
 import {broadcastLatest, broadCastTransactionPool, broadCastMeasurementPool} from './p2p'
 import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
-import {Flow, Measurement} from './measurement'
+import {Flow, Measurement, $processMeasurements} from './measurement'
 import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
-import {addToMeasurementPool} from './measurement-pool'
+import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './measurement-pool'
 import {
   createTransaction,
   findUnspentTxOuts,
@@ -21,13 +21,14 @@ const mintingWithoutCoinIndex = 100
 
 class Block {
   public index: number
-  public hash: string
+  public hash: string // merkleRoot
   public previousHash: string
   public timestamp: number
   public data: Payload
   public difficulty: number
   public minterBalance: number
   public minterAddress: string
+  public version: string
 
   constructor(
     index: number,
@@ -99,6 +100,7 @@ const genesisBlock: Block = new Block(
 
 let blockchain: Block[] = [genesisBlock]
 let unspentTxOuts: UnspentTxOut[] = processTransactions(blockchain[0].data, [], 0)
+let unspentMtOuts: Measurement[] = $processMeasurements(blockchain[0].data.measurements)
 
 const $blockchain = (): Block[] => blockchain
 
@@ -151,8 +153,9 @@ const $myUnspentTransactionOutputs = () => {
 }
 
 const $generateNextBlock = () => {
+  // todo check this
   const coinbaseTx: Transaction = getCoinbaseTransaction($getPublicFromWallet(), getLatestBlock().index + 1)
-  const blockData: Payload = {transactions: [coinbaseTx].concat($transactionPool()), measurements: []}
+  const blockData: Payload = {transactions: [coinbaseTx].concat($transactionPool()), measurements: $measurementPool()}
   return $generateRawNextBlock(blockData)
 }
 
@@ -292,7 +295,7 @@ const hasValidHash = (block: Block): boolean => {
       block.index
     )
   ) {
-    console.log('staking hash not lower than balance over diffculty times 2^256')
+    // console.log('staking hash not lower than balance over diffculty times 2^256')
   }
   return true
 }
@@ -344,7 +347,7 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
 
     aUnspentTxOuts = processTransactions(currentBlock.data, aUnspentTxOuts, currentBlock.index)
     if (aUnspentTxOuts === null) {
-      console.log('invalid transactions in blockchain')
+      // console.log('invalid transactions in blockchain')
       return null
     }
   }
@@ -353,14 +356,16 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
 
 const addBlockToChain = (newBlock: Block): boolean => {
   if (isValidNewBlock(newBlock, getLatestBlock())) {
-    const retVal: UnspentTxOut[] = processTransactions(newBlock.data, $unspentTxOuts(), newBlock.index)
-    if (retVal === null) {
-      console.log('block is not valid in terms of transactions')
+    const retTx: UnspentTxOut[] = processTransactions(newBlock.data, $unspentTxOuts(), newBlock.index)
+    const retMt: UnspentTxOut[] = processTransactions(newBlock.data, $unspentTxOuts(), newBlock.index)
+    if (retTx === null) {
+      // console.log('block is not valid in terms of transactions')
       return false
     } else {
       blockchain.push(newBlock)
-      setUnspentTxOuts(retVal)
+      setUnspentTxOuts(retTx)
       updateTransactionPool(unspentTxOuts)
+      $updateMeasurementsPool(unspentMtOuts)
       return true
     }
   }
@@ -384,7 +389,7 @@ const handleReceivedTransaction = (transaction: Transaction) => {
 
 const $sendMeasurement = (mtIns: Flow[], mtOuts: Flow[]): Measurement => {
   const mt: Measurement = createMeasurement(mtIns, mtOuts, getPrivateKey())
-  addToMeasurementPool(mt)
+  $addToMeasurementPool(mt)
   broadCastMeasurementPool()
   return mt
 }

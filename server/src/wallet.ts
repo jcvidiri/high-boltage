@@ -102,7 +102,7 @@ const createTransaction = (
   unspentTxOuts: UnspentTxOut[],
   txPool: Transaction[]
 ): Transaction => {
-  console.log('txPool: %s', JSON.stringify(txPool))
+  // console.log('txPool: %s', JSON.stringify(txPool))
   const myAddress: string = getPublicKey(privateKey)
   const myUnspentTxOutsA = unspentTxOuts.filter((uTxO: UnspentTxOut) => uTxO.address === myAddress)
 
