@@ -23,6 +23,11 @@ const addToTransactionPool = (tx: Transaction, unspentTxOuts: UnspentTxOut[]) =>
   transactionPool.push(tx)
 }
 
+const $addToTransactionPool = (txs: {base: Transaction; full: Transaction}) => {
+  transactionPool.push(txs.full)
+  transactionPool.push(txs.base)
+}
+
 const hasTxIn = (txIn: TxIn, unspentTxOuts: UnspentTxOut[]): boolean => {
   const foundTxIn = unspentTxOuts.find((uTxO: UnspentTxOut) => {
     return uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex
@@ -71,4 +76,4 @@ const isValidTxForPool = (tx: Transaction, aTtransactionPool: Transaction[]): bo
   return true
 }
 
-export {addToTransactionPool, $transactionPool, updateTransactionPool, cleanTransactionPool}
+export {addToTransactionPool, $addToTransactionPool, $transactionPool, updateTransactionPool, cleanTransactionPool}

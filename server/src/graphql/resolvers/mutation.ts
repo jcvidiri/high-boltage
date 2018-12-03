@@ -6,7 +6,9 @@ import {
   $generateRawNextBlock
 } from '../../blockchain'
 import {$connectToPeer} from '../../p2p'
-
+import {Contract, RawContract, $createContract} from '../../contract'
+import {$createContractTransactions} from '../../transaction'
+import {$addToTransactionPool} from '../../transaction-pool'
 var resolvers = {
   Mutation: {
     addPeer,
@@ -14,7 +16,8 @@ var resolvers = {
     mintTransaction,
     sendTransaction,
     sendMeasurement,
-    mintRawBlock
+    mintRawBlock,
+    createContract
   }
 }
 
@@ -42,4 +45,11 @@ async function sendMeasurement(__, {mtIns, mtOuts}) {
 
 async function mintRawBlock(__, {blockData}) {
   return $generateRawNextBlock(blockData)
+}
+
+async function createContract(__, {contract}): Promise<Contract> {
+  // todo check this
+  const transactions = await $createContractTransactions(contract)
+  await $addToTransactionPool(transactions)
+  return $createContract(contract, transactions)
 }
