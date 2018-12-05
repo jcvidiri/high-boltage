@@ -3,6 +3,7 @@ import * as ecdsa from 'elliptic'
 import * as _ from 'lodash'
 import {Payload} from './blockchain'
 import {toHexString} from './utils'
+import {RawContract} from './contract'
 const ec = new ecdsa.ec('secp256k1')
 const COINBASE_AMOUNT: number = 500
 
@@ -337,6 +338,34 @@ const isValidAddress = (address: string): boolean => {
   return true
 }
 
+const $createContractTransactions = (contract: RawContract): {full: Transaction; base: Transaction} => {
+  // todo here
+  const base = {
+    id: 'someid',
+    txIns: [
+      {
+        txOutId: 'someid',
+        txOutIndex: 60,
+        signature: 'somesignature'
+      }
+    ],
+    txOuts: [new TxOut('someaddress', 50)]
+  }
+  const full = {
+    id: 'someid',
+    txIns: [
+      {
+        txOutId: 'someid',
+        txOutIndex: 40,
+        signature: 'somesignature'
+      }
+    ],
+    txOuts: [new TxOut('someaddress', 150)]
+  }
+
+  return {full, base}
+}
+
 export {
   processTransactions,
   signTxIn,
@@ -349,5 +378,6 @@ export {
   getCoinbaseTransaction,
   getPublicKey,
   hasDuplicates,
-  Transaction
+  Transaction,
+  $createContractTransactions
 }

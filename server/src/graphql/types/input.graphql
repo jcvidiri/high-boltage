@@ -18,3 +18,11 @@ input FlowInput {
   address: String
   signature: String
 }
+
+input ContractInput {
+  amount: String
+  baseAmount: String
+  expirationDate: String
+  toAddress: String
+  fromAddress: String
+}

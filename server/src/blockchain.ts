@@ -3,8 +3,10 @@ import * as _ from 'lodash'
 import {broadcastLatest, broadCastTransactionPool, broadCastMeasurementPool} from './p2p'
 import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
 import {Flow, Measurement, $processMeasurements} from './measurement'
+import {Contract, $resolvedContracts} from './contract'
 import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
 import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './measurement-pool'
+import {getCurrentTimestamp} from './utils'
 import {
   createTransaction,
   findUnspentTxOuts,
@@ -54,9 +56,12 @@ class Block {
 class Payload {
   public transactions: Transaction[]
   public measurements: Measurement[]
+  public contracts: Contract[]
 
-  constructor(transactions: Transaction[], measurements: Measurement[]) {
-    ;(this.transactions = transactions), (this.measurements = measurements)
+  constructor(transactions: Transaction[], measurements: Measurement[], contracts: Contract[]) {
+    this.transactions = transactions
+    this.measurements = measurements
+    this.contracts = contracts
   }
 }
 
@@ -84,7 +89,7 @@ const genesisMeasurement: Measurement = {
       signature: ''
     }
   ],
-  id: 'someId1'
+  id: '60f5eb794e7e7133c2a64d741fd1ab76b877bd3158e3ca5d6942cfecedf2e41f'
 }
 
 const genesisBlock: Block = new Block(
@@ -92,7 +97,7 @@ const genesisBlock: Block = new Block(
   '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627',
   '',
   1537145550,
-  {transactions: [genesisTransaction], measurements: [genesisMeasurement]},
+  {transactions: [genesisTransaction], measurements: [genesisMeasurement], contracts: []},
   0,
   500,
   '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0'
@@ -133,8 +138,6 @@ const adjustDifficulty = (lastBlock: Block, blockchain: Block[]) => {
   }
 }
 
-const getCurrentTimestamp = (): number => Math.round(new Date().getTime() / 1000)
-
 const $generateRawNextBlock = (blockData: Payload) => {
   const previousBlock: Block = getLatestBlock()
   const difficulty: number = getDifficulty($blockchain())
@@ -155,7 +158,11 @@ const $myUnspentTransactionOutputs = () => {
 const $generateNextBlock = () => {
   // todo check this
   const coinbaseTx: Transaction = getCoinbaseTransaction($getPublicFromWallet(), getLatestBlock().index + 1)
-  const blockData: Payload = {transactions: [coinbaseTx].concat($transactionPool()), measurements: $measurementPool()}
+  const blockData: Payload = {
+    transactions: [coinbaseTx].concat($transactionPool()),
+    measurements: $measurementPool(),
+    contracts: $resolvedContracts()
+  }
   return $generateRawNextBlock(blockData)
 }
 
@@ -172,7 +179,7 @@ const $mintTransaction = (receiverAddress: string, amount: number) => {
     $unspentTxOuts(),
     $transactionPool()
   )
-  const blockData: Payload = {transactions: [coinbaseTx, tx], measurements: []}
+  const blockData: Payload = {transactions: [coinbaseTx, tx], measurements: [], contracts: []}
   return $generateRawNextBlock(blockData)
 }
 

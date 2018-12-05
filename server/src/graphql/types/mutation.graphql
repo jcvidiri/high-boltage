@@ -5,4 +5,5 @@ type Mutation {
   mintTransaction(transaction: TransactionInput!): Block
   sendTransaction(transaction: TransactionInput!): Transaction
   sendMeasurement(measurement: MeasurementInput!): Measurement
+  createContract(contract: ContractInput!): Contract
 }

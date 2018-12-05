@@ -13,4 +13,6 @@ const toHexString = (byteArray): string => {
   }).join('')
 }
 
-export {JSONToObject, toHexString}
+const getCurrentTimestamp = (): number => Math.round(new Date().getTime() / 1000)
+
+export {JSONToObject, toHexString, getCurrentTimestamp}

@@ -50,3 +50,14 @@ type UnspentTxOut {
   address: String
   txOutIndex: String
 }
+
+type Contract {
+  id: String
+  txId: String
+  amount: String
+  txBaseId: String
+  timestamp: String
+  toAddress: String
+  fromAddress: String
+  expirationDate: String
+}
