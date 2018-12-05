@@ -111,22 +111,22 @@ const setUnspentTxOuts = (newUnspentTxOut: UnspentTxOut[]) => {
 }
 const getLatestBlock = (): Block => blockchain[blockchain.length - 1]
 
-const getDifficulty = (aBlockchain: Block[]): number => {
-  const latestBlock: Block = aBlockchain[blockchain.length - 1]
-  if (latestBlock.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0 && latestBlock.index !== 0) {
-    return getAdjustedDifficulty(latestBlock, aBlockchain)
+const getDifficulty = (blockchain: Block[]): number => {
+  const lastBlock: Block = blockchain[blockchain.length - 1]
+  if (lastBlock.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0 && lastBlock.index !== 0) {
+    return adjustDifficulty(lastBlock, blockchain)
   } else {
-    return latestBlock.difficulty
+    return lastBlock.difficulty
   }
 }
 
-const getAdjustedDifficulty = (latestBlock: Block, aBlockchain: Block[]) => {
-  const prevAdjustmentBlock: Block = aBlockchain[blockchain.length - DIFFICULTY_ADJUSTMENT_INTERVAL]
-  const timeExpected: number = BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL
-  const timeTaken: number = latestBlock.timestamp - prevAdjustmentBlock.timestamp
-  if (timeTaken < timeExpected / 2) {
+const adjustDifficulty = (lastBlock: Block, blockchain: Block[]) => {
+  const prevAdjustmentBlock: Block = blockchain[blockchain.length - DIFFICULTY_ADJUSTMENT_INTERVAL]
+  const expTime: number = BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL
+  const lastTime: number = lastBlock.timestamp - prevAdjustmentBlock.timestamp
+  if (lastTime < expTime / 2) {
     return prevAdjustmentBlock.difficulty + 1
-  } else if (timeTaken > timeExpected * 2) {
+  } else if (lastTime > expTime * 2) {
     return prevAdjustmentBlock.difficulty - 1
   } else {
     return prevAdjustmentBlock.difficulty
