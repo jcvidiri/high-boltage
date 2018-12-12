@@ -15,4 +15,8 @@ const toHexString = (byteArray): string => {
 
 const getCurrentTimestamp = (): number => Math.round(new Date().getTime() / 1000)
 
-export {JSONToObject, toHexString, getCurrentTimestamp}
+const timeout = ms => {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+export {JSONToObject, toHexString, getCurrentTimestamp, timeout}

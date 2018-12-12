@@ -34,7 +34,7 @@ const $flowPool = () => {
   return _.cloneDeep(flowPool)
 }
 
-const $cleanflowPool = () => {
+const $cleanFlowPool = () => {
   // this is for test purposes only
   flowPool = []
 }
@@ -86,4 +86,4 @@ const isValidFlowStructure = (flow: Flow): boolean => {
 //   return true
 // }
 
-export {Flow, $flowPool, $addToFlowPool, $cleanflowPool}
+export {Flow, $flowPool, $addToFlowPool, $cleanFlowPool}

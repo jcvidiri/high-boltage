@@ -6,7 +6,7 @@
 //   $generateRawNextBlock
 // } from '../../blockchain'
 // import {$connectToPeer} from '../../p2p'
-import {Contract, ContractInput, $addToContractPool} from '../../contract'
+import {Contract, ContractInput, $addContractToPool} from '../../contract'
 import {Flow} from '../../flow'
 import {$addToFlowPool} from '../../flow'
 // import {$createContractTransactions} from '../../transaction'
@@ -55,6 +55,6 @@ async function addFlow(__, {flow}: {flow: Flow}) {
 
 async function createContract(__, {contract}: {contract: ContractInput}): Promise<Contract> {
   const rawContract = new Contract(contract)
-  await $addToContractPool(rawContract)
+  await $addContractToPool(rawContract)
   return rawContract
 }

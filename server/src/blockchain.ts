@@ -3,7 +3,7 @@ import * as _ from 'lodash'
 import {BigNumber} from 'bignumber.js'
 import {broadcastLatest} from './p2p'
 // import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
-// import {Flow} from './flow'
+import {Flow} from './flow'
 // import {Contract, $resolvedContracts} from './contract'
 import {Contract, $contractPool} from './contract'
 import {$flowPool} from './flow'
@@ -285,8 +285,11 @@ const isBlockStakingValid = (
 //   }
 //   return aUnspentTxOuts
 // }
-const addFlowsToClaims = ({flows, claims}) => {
-  //todo here
+const $addFlowsToClaims = async ({flows, claims}: {flows: Flow[]; claims: Contract[]}) => {
+  await flows.map(async f => {
+    const index = await claims.findIndex(c => c.claimId === f.claimId)
+    if (index != -1) claims[index].measurements.push(f)
+  })
 }
 
 const processFlows = ({contracts}) => {
@@ -354,7 +357,7 @@ const $startMinting = async () => {
   while (mint) {
     const claims = $contractPool()
     const flows = $flowPool()
-    await addFlowsToClaims({flows, claims})
+    await $addFlowsToClaims({flows, claims})
     const resolvedContracts = getResolvedContracts()
     await signContracts({contracts: resolvedContracts})
     const rawBlock = generateRawNextBlock({contracts: resolvedContracts})
@@ -382,5 +385,6 @@ export {
   // replaceChain,
   addBlockToChain,
   $startMinting,
-  $stopMinting
+  $stopMinting,
+  $addFlowsToClaims
 }

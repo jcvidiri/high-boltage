@@ -20,6 +20,6 @@
       "esnext.asynciterable"
     ]
   },
-  "include": ["src/**/*.ts", "src/graph2/**/*.ts"],
+  "include": ["src/**/*.ts", "src/graph2/**/*.ts", "tests/*.ts"],
   "exclude": ["node_modules"]
 }
