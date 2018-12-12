@@ -64,7 +64,7 @@ const $cleanContractPool = () => {
   contractPool = []
 }
 
-const $addToContractPool = (contract: Contract) => {
+const $addContractToPool = (contract: Contract) => {
   contractPool.push(contract)
 }
 
@@ -73,4 +73,4 @@ const $resolvedContracts = (): Contract[] => {
   return $contractPool()
 }
 
-export {Contract, $contractPool, $cleanContractPool, $addToContractPool, ContractInput, $resolvedContracts}
+export {Contract, $contractPool, $cleanContractPool, $addContractToPool, ContractInput, $resolvedContracts}
