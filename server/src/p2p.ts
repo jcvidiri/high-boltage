@@ -4,13 +4,13 @@ import {
   addBlockToChain,
   Block,
   $blockchain,
-  getLatestBlock,
-  handleReceivedTransaction,
-  isValidBlockStructure,
-  replaceChain
+  getLatestBlock
+  // handleReceivedTransaction,
+  // isValidBlockStructure,
+  // replaceChain
 } from './blockchain'
-import {Transaction} from './transaction'
-import {$transactionPool} from './transaction-pool'
+// import {Transaction} from './transaction'
+// import {$transactionPool} from './transaction-pool'
 import {JSONToObject} from './utils'
 
 const sockets: WebSocket[] = []
@@ -53,7 +53,7 @@ const $getSockets = () => sockets
 
 const initConnection = (ws: WebSocket) => {
   sockets.push(ws)
-  initMessageHandler(ws)
+  // initMessageHandler(ws)
   initErrorHandler(ws)
   write(ws, queryChainLengthMsg())
 
@@ -62,54 +62,54 @@ const initConnection = (ws: WebSocket) => {
   }, 500)
 }
 
-const initMessageHandler = (ws: WebSocket) => {
-  ws.on('message', (data: string) => {
-    try {
-      const message: Message = JSONToObject<Message>(data)
-      if (message === null) {
-        // console.log('could not parse received JSON message: ' + data)
-        return
-      }
-      // console.log('Received message: %s', JSON.stringify(message))
-      switch (message.type) {
-        case MessageType.QUERY_LATEST:
-          write(ws, responseLatestMsg())
-          break
-        case MessageType.QUERY_ALL:
-          write(ws, responseChainMsg())
-          break
-        case MessageType.RESPONSE_BLOCKCHAIN:
-          const receivedBlocks: Block[] = JSONToObject<Block[]>(message.data)
-          if (receivedBlocks === null) {
-            // console.log('invalid blocks received: %s', JSON.stringify(message.data))
-            break
-          }
-          handleBlockchainResponse(receivedBlocks)
-          break
-        case MessageType.QUERY_TRANSACTION_POOL:
-          write(ws, responseTransactionPoolMsg())
-          break
-        case MessageType.RESPONSE_TRANSACTION_POOL:
-          const receivedTransactions: Transaction[] = JSONToObject<Transaction[]>(message.data)
-          if (receivedTransactions === null) {
-            // console.log('invalid transaction received: %s', JSON.stringify(message.data))
-            break
-          }
-          receivedTransactions.forEach((transaction: Transaction) => {
-            try {
-              handleReceivedTransaction(transaction)
-              broadCastTransactionPool()
-            } catch (e) {
-              console.log(e.message)
-            }
-          })
-          break
-      }
-    } catch (e) {
-      console.log(e)
-    }
-  })
-}
+// const initMessageHandler = (ws: WebSocket) => {
+//   ws.on('message', (data: string) => {
+//     try {
+//       const message: Message = JSONToObject<Message>(data)
+//       if (message === null) {
+//         // console.log('could not parse received JSON message: ' + data)
+//         return
+//       }
+//       // console.log('Received message: %s', JSON.stringify(message))
+//       switch (message.type) {
+//         case MessageType.QUERY_LATEST:
+//           write(ws, responseLatestMsg())
+//           break
+//         case MessageType.QUERY_ALL:
+//           write(ws, responseChainMsg())
+//           break
+//         case MessageType.RESPONSE_BLOCKCHAIN:
+//           const receivedBlocks: Block[] = JSONToObject<Block[]>(message.data)
+//           if (receivedBlocks === null) {
+//             // console.log('invalid blocks received: %s', JSON.stringify(message.data))
+//             break
+//           }
+//           handleBlockchainResponse(receivedBlocks)
+//           break
+//         case MessageType.QUERY_TRANSACTION_POOL:
+//           write(ws, responseTransactionPoolMsg())
+//           break
+//         case MessageType.RESPONSE_TRANSACTION_POOL:
+//           const receivedTransactions: Transaction[] = JSONToObject<Transaction[]>(message.data)
+//           if (receivedTransactions === null) {
+//             // console.log('invalid transaction received: %s', JSON.stringify(message.data))
+//             break
+//           }
+//           receivedTransactions.forEach((transaction: Transaction) => {
+//             try {
+//               handleReceivedTransaction(transaction)
+//               broadCastTransactionPool()
+//             } catch (e) {
+//               console.log(e.message)
+//             }
+//           })
+//           break
+//       }
+//     } catch (e) {
+//       console.log(e)
+//     }
+//   })
+// }
 
 const write = (ws: WebSocket, message: Message): void => ws.send(JSON.stringify(message))
 const broadcast = (message: Message): void => sockets.forEach(socket => write(socket, message))
@@ -130,6 +130,7 @@ const responseChainMsg = (): Message => ({
 })
 
 const responseLatestMsg = (): Message => ({
+  // broadcast minted block
   type: MessageType.RESPONSE_BLOCKCHAIN,
   data: JSON.stringify([getLatestBlock()])
 })
@@ -139,15 +140,15 @@ const queryTransactionPoolMsg = (): Message => ({
   data: null
 })
 
-const responseTransactionPoolMsg = (): Message => ({
-  type: MessageType.RESPONSE_TRANSACTION_POOL,
-  data: JSON.stringify($transactionPool())
-})
+// const responseTransactionPoolMsg = (): Message => ({
+//   type: MessageType.RESPONSE_TRANSACTION_POOL,
+//   data: JSON.stringify($transactionPool())
+// })
 
-const responseMeasurementPoolMsg = (): Message => ({
-  type: MessageType.RESPONSE_MEASUREMENT_POOL,
-  data: JSON.stringify($transactionPool())
-})
+// const responseMeasurementPoolMsg = (): Message => ({
+//   type: MessageType.RESPONSE_MEASUREMENT_POOL,
+//   data: JSON.stringify($transactionPool())
+// })
 
 const initErrorHandler = (ws: WebSocket) => {
   const closeConnection = (myWs: WebSocket) => {
@@ -164,10 +165,10 @@ const handleBlockchainResponse = (receivedBlocks: Block[]) => {
     return
   }
   const latestBlockReceived: Block = receivedBlocks[receivedBlocks.length - 1]
-  if (!isValidBlockStructure(latestBlockReceived)) {
-    // console.log('block structuture not valid')
-    return
-  }
+  // if (!isValidBlockStructure(latestBlockReceived)) {
+  //   // console.log('block structuture not valid')
+  //   return
+  // }
   const latestBlockHeld: Block = getLatestBlock()
   if (latestBlockReceived.index > latestBlockHeld.index) {
     // console.log(
@@ -182,7 +183,7 @@ const handleBlockchainResponse = (receivedBlocks: Block[]) => {
       broadcast(queryAllMsg())
     } else {
       // console.log('Received blockchain is longer than current blockchain')
-      replaceChain(receivedBlocks)
+      // replaceChain(receivedBlocks)
     }
   } else {
     // console.log('received blockchain is not longer than received blockchain. Do nothing')
@@ -204,12 +205,13 @@ const $connectToPeer = (newPeer: string): void => {
   })
 }
 
-const broadCastTransactionPool = () => {
-  broadcast(responseTransactionPoolMsg())
-}
+// const broadCastTransactionPool = () => {
+//   broadcast(responseTransactionPoolMsg())
+// }
 
-const broadCastMeasurementPool = () => {
-  broadcast(responseMeasurementPoolMsg())
-}
+// const broadCastMeasurementPool = () => {
+//   broadcast(responseMeasurementPoolMsg())
+// }
 
-export {$connectToPeer, broadcastLatest, broadCastTransactionPool, p2pServer, $getSockets, broadCastMeasurementPool}
+// export {$connectToPeer, broadcastLatest, broadCastTransactionPool, p2pServer, $getSockets, broadCastMeasurementPool}
+export {$connectToPeer, broadcastLatest, p2pServer, $getSockets}

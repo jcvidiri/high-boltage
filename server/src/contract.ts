@@ -1,36 +1,56 @@
 import * as CryptoJS from 'crypto-js'
 import * as _ from 'lodash'
-// import {Flow} from './measurement'
+import * as ecdsa from 'elliptic'
+import {Flow} from './flow'
 import {getCurrentTimestamp} from './utils'
-import {Transaction} from './transaction'
+import {toHexString} from './utils'
+import {$getPrivateFromWallet} from './wallet'
+const ec = new ecdsa.ec('secp256k1')
 
-class RawContract {
-  amount: string
-  baseAmount: string
-  expirationDate: string
-  toAddress: string
-  fromAddress: string
+class ContractInput {
+  claimant: string
+  amount: number
+  price: number
+  expDate: number
 }
-class Contract {
-  public id: string
-  public txId: string
-  public amount: string
-  public expDate: string
-  public txBaseId: string
-  public timestamp: number
-  public toAddress: string
-  public fromAddress: string
+// class RawContract {
+//   claimant: string
+//   amount: number
+//   price: number
+//   expDate: number
+//   timestamp: number
+//   claimId: string
+//   measurements: Flow[]
+// }
 
-  constructor(txId: string, amount: string, expDate: string, txBaseId: string, toAddress: string, fromAddress: string) {
+class Contract {
+  public id: string // hash(claimId + measurements)
+  public claimId: string // hash (claimant + amount + expDate + price + timestamp)
+  public claimant: string //id of the claimant
+  public timestamp: number
+  public expDate: number // time when contract expires, if max amount wasnt reached
+  public amount: number //max amount in MW/h
+  public price: number // by MW/h
+  public measurements: Flow[] // energy injection by generators for this specific claimant
+  public signature: string // sign(id)
+
+  constructor({claimant, amount, price, expDate}: ContractInput) {
     this.timestamp = getCurrentTimestamp()
-    this.id = CryptoJS.SHA256(txId + amount + expDate + txBaseId + this.timestamp + toAddress + fromAddress).toString()
-    this.txId = txId
+    this.claimant = claimant
     this.amount = amount
+    this.price = price
     this.expDate = expDate
-    this.txBaseId = txBaseId
-    this.toAddress = toAddress
-    this.fromAddress = fromAddress
+    this.claimId = CryptoJS.SHA256(claimant + amount + expDate + price + this.timestamp).toString()
+    this.measurements = []
   }
+}
+
+const signContract = (contract: Contract): Contract => {
+  const privateKey = $getPrivateFromWallet()
+  contract.id = CryptoJS.SHA256(contract.claimId + contract.measurements.map(m => m.id)).toString()
+  const key = ec.keyFromPrivate(privateKey, 'hex')
+  contract.signature = toHexString(key.sign(contract.id).toDER())
+  return contract
 }
 
 let contractPool: Contract[] = []
@@ -44,20 +64,6 @@ const $cleanContractPool = () => {
   contractPool = []
 }
 
-const $createContract = async (contract: RawContract, transactions: {full: Transaction; base: Transaction}) => {
-  const newContract = new Contract(
-    transactions.full.id,
-    contract.amount,
-    contract.expirationDate,
-    transactions.base.id,
-    contract.toAddress,
-    contract.fromAddress
-  )
-
-  await $addToContractPool(newContract)
-  return newContract
-}
-
 const $addToContractPool = (contract: Contract) => {
   contractPool.push(contract)
 }
@@ -66,12 +72,5 @@ const $resolvedContracts = (): Contract[] => {
   // todo here
   return $contractPool()
 }
-export {
-  Contract,
-  $contractPool,
-  $cleanContractPool,
-  $createContract,
-  $addToContractPool,
-  RawContract,
-  $resolvedContracts
-}
+
+export {Contract, $contractPool, $cleanContractPool, $addToContractPool, ContractInput, $resolvedContracts}
