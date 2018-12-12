@@ -1,9 +1,9 @@
 type Mutation {
-  addPeer(peer: String): Boolean
-  mintBlock: Block
-  mintRawBlock(blockData: PayloadInput): Block
-  mintTransaction(transaction: TransactionInput!): Block
-  sendTransaction(transaction: TransactionInput!): Transaction
-  sendMeasurement(measurement: MeasurementInput!): Measurement
-  createContract(contract: ContractInput!): Contract
+  # addPeer(peer: String): Boolean
+  # mintBlock: Block
+  # mintRawBlock(blockData: PayloadInput): Block
+  # mintTransaction(transaction: TransactionInput!): Block
+  # sendTransaction(transaction: TransactionInput!): Transaction
+  addFlow(flow: FlowInput!): Flow
+  createContract(contract: ContractInput!): RawContract
 }

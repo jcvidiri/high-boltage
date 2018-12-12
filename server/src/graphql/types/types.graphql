@@ -1,63 +1,41 @@
-type Block {
-  hash: String
-  data: Payload
-  index: String
-  timestamp: String
-  difficulty: String
-  previousHash: String
-  minterBalance: String
-  minterAddress: String
-}
-
-type Payload {
-  transactions: [Transaction]
-  measurements: [Measurement]
-}
-
-type Transaction {
-  id: String
-  txIns: [TxIn]
-  txOuts: [TxOut]
-}
-
-type TxIn {
-  txOutId: String
-  signature: String
-  txOutIndex: String
-}
-
-type TxOut {
-  address: String
-  amount: String
-}
-
-type Measurement {
-  id: String
-  mtIns: [Flow]
-  mtOuts: [Flow]
-}
+# type Block {
+#   hash: String
+#   contracts: [Contract]
+#   index: String
+#   timestamp: String
+#   difficulty: String
+#   previousHash: String
+#   minterBalance: String
+#   minterAddress: String
+# }
 
 type Flow {
   id: String
+  timestamp: String
+  generator: String
   amount: String
-  address: String
+  claimId: String
   signature: String
-}
-
-type UnspentTxOut {
-  amount: String
-  txOutId: String
-  address: String
-  txOutIndex: String
 }
 
 type Contract {
   id: String
-  txId: String
-  amount: String
-  txBaseId: String
+  claimId: String
+  claimant: String
   timestamp: String
-  toAddress: String
-  fromAddress: String
-  expirationDate: String
+  expDate: String
+  amount: String
+  price: String
+  measurements: [Flow]
+  signature: String
+}
+
+type RawContract {
+  timestamp: String
+  claimant: String
+  amount: String
+  price: String
+  expDate: String
+  claimId: String
+  measurements: [Flow]
 }

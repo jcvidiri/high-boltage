@@ -1,28 +1,15 @@
-input TransactionInput {
-  addres: String!
-  amount: String!
-}
-
-input MeasurementInput {
-  mtIns: [FlowInput]
-  mtOuts: [FlowInput]
-}
-
-input PayloadInput {
-  transactions: [TransactionInput]
-  measurements: [MeasurementInput]
-}
-
 input FlowInput {
+  id: String
+  timestamp: String
+  generator: String
   amount: String
-  address: String
+  claimId: String
   signature: String
 }
 
 input ContractInput {
+  claimant: String
   amount: String
-  baseAmount: String
-  expirationDate: String
-  toAddress: String
-  fromAddress: String
+  price: String
+  expDate: String
 }

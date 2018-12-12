@@ -1,12 +1,13 @@
 type Query {
-  peers: [String!]
-  balance: String
-  address: String
-  block(hash: String!): Block
-  blockchain: [Block]
-  transaction(id: String!): Transaction
-  transactionPool: [Transaction]
-  measurementPool: [Measurement]
-  unspentTransactionOutputs(address: String): [UnspentTxOut]
-  myUnspentTransactionOutputs: [UnspentTxOut]
+  # peers: [String!]
+  # balance: String
+  # address: String
+  # block(hash: String!): Block
+  # blockchain: [Block]
+  # transaction(id: String!): Transaction
+  flowPool: [Flow]
+  # measurementPool: [Measurement]
+  contractPool: [RawContract]
+  # unspentTransactionOutputs(address: String): [UnspentTxOut]
+  # myUnspentTransactionOutputs: [UnspentTxOut]
 }

@@ -1,21 +1,23 @@
 import * as CryptoJS from 'crypto-js'
 import * as _ from 'lodash'
-import {broadcastLatest, broadCastTransactionPool, broadCastMeasurementPool} from './p2p'
-import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
-import {Flow, Measurement, $processMeasurements} from './measurement'
-import {Contract, $resolvedContracts} from './contract'
-import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
-import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './measurement-pool'
+import {BigNumber} from 'bignumber.js'
+import {broadcastLatest} from './p2p'
+// import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
+// import {Flow} from './flow'
+// import {Contract, $resolvedContracts} from './contract'
+import {Contract, $contractPool} from './contract'
+import {$flowPool} from './flow'
+// import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
+// import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './flow-pool'
 import {getCurrentTimestamp} from './utils'
 import {
-  createTransaction,
-  findUnspentTxOuts,
-  getBalance,
-  getPrivateKey,
-  $getPublicFromWallet,
-  createMeasurement
+  // createTransaction,
+  // findUnspentTxOuts,
+  // $getBalance,
+  $getPrivateFromWallet,
+  $getPublicFromWallet
+  // createMeasurement
 } from './wallet'
-import {BigNumber} from 'bignumber.js'
 
 const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
@@ -23,21 +25,21 @@ const mintingWithoutCoinIndex = 100
 
 class Block {
   public index: number
-  public hash: string // merkleRoot
+  public hash?: string // merkleRoot
   public previousHash: string
   public timestamp: number
-  public data: Payload
+  public contracts: Contract[]
   public difficulty: number
   public minterBalance: number
   public minterAddress: string
-  public version: string
+  // public version: string
 
   constructor(
     index: number,
     hash: string,
     previousHash: string,
     timestamp: number,
-    data: Payload,
+    contracts: Contract[],
     difficulty: number,
     minterBalance: number,
     minterAddress: string
@@ -45,7 +47,7 @@ class Block {
     this.index = index
     this.previousHash = previousHash
     this.timestamp = timestamp
-    this.data = data
+    this.contracts = contracts
     this.hash = hash
     this.difficulty = difficulty
     this.minterBalance = minterBalance
@@ -53,43 +55,17 @@ class Block {
   }
 }
 
-class Payload {
-  public transactions: Transaction[]
-  public measurements: Measurement[]
-  public contracts: Contract[]
-
-  constructor(transactions: Transaction[], measurements: Measurement[], contracts: Contract[]) {
-    this.transactions = transactions
-    this.measurements = measurements
-    this.contracts = contracts
-  }
-}
-
-// todo change this
-const genesisTransaction: Transaction = {
-  txIns: [{signature: '', txOutId: '', txOutIndex: 0}],
-  txOuts: [
-    {
-      address:
-        '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0',
-      amount: 500
-    }
-  ],
-  id: '60f5eb794e7e7133c2a64d741fd1ab76b877bd3158e3ca5d6942cfecedf2e41f'
-}
-
-const genesisMeasurement: Measurement = {
-  mtIns: [{signature: '', amount: 0, address: '', id: ''}],
-  mtOuts: [
-    {
-      id: '',
-      address:
-        '042421b025191c40c3e995519d80a9af95a4275b9741e8f833a30c001cee3fbaf65388923d373cecd20debd7461c54ed324b052dcbe52901166e4ecb4b00190057',
-      amount: 50,
-      signature: ''
-    }
-  ],
-  id: '60f5eb794e7e7133c2a64d741fd1ab76b877bd3158e3ca5d6942cfecedf2e41f'
+const genesisContract: Contract = {
+  id: '60f5eb794e7e7133c2a64d741fd1ab76b877bd3158e3ca5d6942cfecedf2e41f',
+  claimId: '60f5eb794e7e7133c2a64d741fd1ab76b877bd3158e3ca5d6942cfecedf2e41f',
+  claimant: '0',
+  amount: 0,
+  price: 0,
+  expDate: 1537145550,
+  timestamp: 1537145550,
+  measurements: [],
+  signature:
+    '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0'
 }
 
 const genesisBlock: Block = new Block(
@@ -97,23 +73,17 @@ const genesisBlock: Block = new Block(
   '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627',
   '',
   1537145550,
-  {transactions: [genesisTransaction], measurements: [genesisMeasurement], contracts: []},
+  [genesisContract],
   0,
   500,
   '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0'
 )
 
 let blockchain: Block[] = [genesisBlock]
-let unspentTxOuts: UnspentTxOut[] = processTransactions(blockchain[0].data, [], 0)
-let unspentMtOuts: Measurement[] = $processMeasurements(blockchain[0].data.measurements)
 
 const $blockchain = (): Block[] => blockchain
-
-const $unspentTxOuts = (): UnspentTxOut[] => _.cloneDeep(unspentTxOuts)
-
-const setUnspentTxOuts = (newUnspentTxOut: UnspentTxOut[]) => {
-  unspentTxOuts = newUnspentTxOut
-}
+let mint = false
+let blockMinted = false
 const getLatestBlock = (): Block => blockchain[blockchain.length - 1]
 
 const getDifficulty = (blockchain: Block[]): number => {
@@ -138,76 +108,55 @@ const adjustDifficulty = (lastBlock: Block, blockchain: Block[]) => {
   }
 }
 
-const $generateRawNextBlock = (blockData: Payload) => {
+const generateRawNextBlock = ({contracts}: {contracts: Contract[]}) => {
   const previousBlock: Block = getLatestBlock()
   const difficulty: number = getDifficulty($blockchain())
   const nextIndex: number = previousBlock.index + 1
-  const newBlock: Block = findBlock(nextIndex, previousBlock.hash, blockData, difficulty)
-  if (addBlockToChain(newBlock)) {
-    broadcastLatest()
-    return newBlock
-  } else {
-    return null
+
+  return {
+    difficulty,
+    index: nextIndex,
+    previousHash: previousBlock.hash,
+    contracts
   }
 }
 
-const $myUnspentTransactionOutputs = () => {
-  return findUnspentTxOuts($getPublicFromWallet(), $unspentTxOuts())
-}
-
-const $generateNextBlock = () => {
-  // todo check this
-  const coinbaseTx: Transaction = getCoinbaseTransaction($getPublicFromWallet(), getLatestBlock().index + 1)
-  const blockData: Payload = {
-    transactions: [coinbaseTx].concat($transactionPool()),
-    measurements: $measurementPool(),
-    contracts: $resolvedContracts()
-  }
-  return $generateRawNextBlock(blockData)
-}
-
-const $mintTransaction = (receiverAddress: string, amount: number) => {
-  if (!isValidAddress(receiverAddress)) throw Error('invalid address')
-
-  if (typeof amount !== 'number') throw Error('invalid amount')
-
-  const coinbaseTx: Transaction = getCoinbaseTransaction($getPublicFromWallet(), getLatestBlock().index + 1)
-  const tx: Transaction = createTransaction(
-    receiverAddress,
-    amount,
-    getPrivateKey(),
-    $unspentTxOuts(),
-    $transactionPool()
-  )
-  const blockData: Payload = {transactions: [coinbaseTx, tx], measurements: [], contracts: []}
-  return $generateRawNextBlock(blockData)
-}
-
-const findBlock = (index: number, previousHash: string, data: Payload, difficulty: number): Block => {
+const findBlock = ({
+  index,
+  previousHash,
+  contracts,
+  difficulty
+}: {
+  index: number
+  previousHash: string
+  contracts: Contract[]
+  difficulty: number
+}): Block => {
   let pastTimestamp: number = 0
-  while (true) {
+  blockMinted = false
+  while (!blockMinted) {
     let timestamp: number = getCurrentTimestamp()
     if (pastTimestamp !== timestamp) {
-      let hash: string = calculateHash(
+      let hash: string = calculateHash({
         index,
         previousHash,
         timestamp,
-        data,
+        contracts,
         difficulty,
-        $getAccountBalance(),
-        $getPublicFromWallet()
-      )
-      if (
-        isBlockStakingValid(previousHash, $getPublicFromWallet(), timestamp, $getAccountBalance(), difficulty, index)
-      ) {
+        // minterBalance: $getBalance(), // todo check this
+        minterBalance: 50,
+        minterAddress: $getPublicFromWallet()
+      })
+
+      if (isBlockStakingValid(previousHash, $getPublicFromWallet(), timestamp, 50, difficulty, index)) {
         return new Block(
           index,
           hash,
           previousHash,
           timestamp,
-          data,
+          contracts,
           difficulty,
-          $getAccountBalance(),
+          50, // todo check this
           $getPublicFromWallet()
         )
       }
@@ -216,46 +165,22 @@ const findBlock = (index: number, previousHash: string, data: Payload, difficult
   }
 }
 
-const $getAccountBalance = (): number => {
-  return getBalance($getPublicFromWallet(), $unspentTxOuts())
-}
-
-const $sendTransaction = (address: string, amount: number): Transaction => {
-  const tx: Transaction = createTransaction(address, amount, getPrivateKey(), $unspentTxOuts(), $transactionPool())
-  addToTransactionPool(tx, $unspentTxOuts())
-  broadCastTransactionPool()
-  return tx
-}
-
-const calculateHashForBlock = (block: Block): string =>
-  calculateHash(
-    block.index,
-    block.previousHash,
-    block.timestamp,
-    block.data,
-    block.difficulty,
-    block.minterBalance,
-    block.minterAddress
-  )
-
-const calculateHash = (
-  index: number,
-  previousHash: string,
-  timestamp: number,
-  data: Payload,
-  difficulty: number,
-  minterBalance: number,
-  minterAddress: string
-): string =>
-  CryptoJS.SHA256(index + previousHash + timestamp + data + difficulty + minterBalance + minterAddress).toString()
+const calculateHash = (block: Block) =>
+  CryptoJS.SHA256(
+    block.index +
+      block.previousHash +
+      block.timestamp +
+      block.contracts +
+      block.difficulty +
+      block.minterBalance +
+      block.minterAddress
+  ).toString()
 
 const isValidBlockStructure = (block: Block): boolean => {
   return (
     typeof block.index === 'number' &&
     typeof block.hash === 'string' &&
-    typeof block.data === 'object' &&
-    typeof block.data.transactions === 'object' && // check for array?
-    typeof block.data.measurements === 'object' &&
+    typeof block.contracts === 'object' &&
     typeof block.timestamp === 'number' &&
     typeof block.difficulty === 'number' &&
     typeof block.previousHash === 'string' &&
@@ -278,12 +203,12 @@ const isValidNewBlock = (newBlock: Block, previousBlock: Block): boolean => {
   return true
 }
 
-const getAccumulatedDifficulty = (aBlockchain: Block[]): number => {
-  return aBlockchain
-    .map(block => block.difficulty)
-    .map(difficulty => Math.pow(2, difficulty))
-    .reduce((a, b) => a + b)
-}
+// const getAccumulatedDifficulty = (aBlockchain: Block[]): number => {
+//   return aBlockchain
+//     .map(block => block.difficulty)
+//     .map(difficulty => Math.pow(2, difficulty))
+//     .reduce((a, b) => a + b)
+// }
 
 const isValidTimestamp = (newBlock: Block, previousBlock: Block): boolean => {
   return previousBlock.timestamp - 60 < newBlock.timestamp && newBlock.timestamp - 60 < getCurrentTimestamp()
@@ -308,7 +233,7 @@ const hasValidHash = (block: Block): boolean => {
 }
 
 const hashMatchesBlockContent = (block: Block): boolean => {
-  const blockHash: string = calculateHashForBlock(block)
+  const blockHash: string = calculateHash(block)
   return blockHash === block.hash
 }
 
@@ -335,100 +260,127 @@ const isBlockStakingValid = (
   return difference >= 0
 }
 
-const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
-  const isValidGenesis = (block: Block): boolean => {
-    return JSON.stringify(block) === JSON.stringify(genesisBlock)
-  }
+// const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
+//   const isValidGenesis = (block: Block): boolean => {
+//     return JSON.stringify(block) === JSON.stringify(genesisBlock)
+//   }
 
-  if (!isValidGenesis(blockchainToValidate[0])) {
-    return null
-  }
+//   if (!isValidGenesis(blockchainToValidate[0])) {
+//     return null
+//   }
 
-  let aUnspentTxOuts: UnspentTxOut[] = []
+//   let aUnspentTxOuts: UnspentTxOut[] = []
 
-  for (let i = 0; i < blockchainToValidate.length; i++) {
-    const currentBlock: Block = blockchainToValidate[i]
-    if (i !== 0 && !isValidNewBlock(blockchainToValidate[i], blockchainToValidate[i - 1])) {
-      return null
-    }
+//   for (let i = 0; i < blockchainToValidate.length; i++) {
+//     const currentBlock: Block = blockchainToValidate[i]
+//     if (i !== 0 && !isValidNewBlock(blockchainToValidate[i], blockchainToValidate[i - 1])) {
+//       return null
+//     }
 
-    aUnspentTxOuts = processTransactions(currentBlock.data, aUnspentTxOuts, currentBlock.index)
-    if (aUnspentTxOuts === null) {
-      // console.log('invalid transactions in blockchain')
-      return null
-    }
-  }
-  return aUnspentTxOuts
+//     aUnspentTxOuts = processTransactions(currentBlock.data, aUnspentTxOuts, currentBlock.index)
+//     if (aUnspentTxOuts === null) {
+//       // console.log('invalid transactions in blockchain')
+//       return null
+//     }
+//   }
+//   return aUnspentTxOuts
+// }
+const addFlowsToClaims = ({flows, claims}) => {
+  //todo here
+}
+
+const processFlows = ({contracts}) => {
+  //todo here // should be in flow.ts??
+}
+const getResolvedContracts = (): Contract[] => {
+  //todo here
+  // loop though claims and check resolved?
+
+  return [new Contract({claimant: 'asd', amount: 50, price: 50, expDate: 12314434})]
+}
+const signContracts = ({contracts}) => {
+  const pub = $getPublicFromWallet()
+  const priv = $getPrivateFromWallet()
+  //todo here
 }
 
 const addBlockToChain = (newBlock: Block): boolean => {
+  if (!newBlock) return false
   if (isValidNewBlock(newBlock, getLatestBlock())) {
-    const retTx: UnspentTxOut[] = processTransactions(newBlock.data, $unspentTxOuts(), newBlock.index)
-    const retMt: UnspentTxOut[] = processTransactions(newBlock.data, $unspentTxOuts(), newBlock.index)
-    if (retTx === null) {
-      // console.log('block is not valid in terms of transactions')
-      return false
-    } else {
-      blockchain.push(newBlock)
-      setUnspentTxOuts(retTx)
-      updateTransactionPool(unspentTxOuts)
-      $updateMeasurementsPool(unspentMtOuts)
-      return true
-    }
+    processFlows({contracts: newBlock.contracts}) // remove flows in contracts from flow-pool
+    blockchain.push(newBlock)
+    return true
   }
   return false
 }
 
-const replaceChain = (newBlocks: Block[]) => {
-  const aUnspentTxOuts = isValidChain(newBlocks)
-  const validChain: boolean = aUnspentTxOuts !== null
-  if (validChain && getAccumulatedDifficulty(newBlocks) > getAccumulatedDifficulty($blockchain())) {
-    blockchain = newBlocks
-    setUnspentTxOuts(aUnspentTxOuts)
-    updateTransactionPool(unspentTxOuts)
-    broadcastLatest()
+// const replaceChain = (newBlocks: Block[]) => {
+//   const aUnspentTxOuts = isValidChain(newBlocks)
+//   const validChain: boolean = aUnspentTxOuts !== null
+//   if (validChain && getAccumulatedDifficulty(newBlocks) > getAccumulatedDifficulty($blockchain())) {
+//     blockchain = newBlocks
+//     setUnspentTxOuts(aUnspentTxOuts)
+//     updateTransactionPool(unspentTxOuts)
+//     broadcastLatest()
+//   }
+// }
+
+// const handleReceivedTransaction = (transaction: Transaction) => {
+//   addToTransactionPool(transaction, $unspentTxOuts())
+// }
+
+// const $sendMeasurement = (mtIns: Flow[], mtOuts: Flow[]): Measurement => {
+//   const mt: Measurement = createMeasurement(mtIns, mtOuts, getPrivateKey())
+//   $addToMeasurementPool(mt)
+//   broadCastMeasurementPool()
+//   return mt
+// }
+
+// const mintBlock = (block: Block, count: number, callback: Function) => {
+//   if (block) return callback(null, block)
+
+//   setTimeout(function() {
+//     // you can only mint a block per second due to timestamp
+//     count++
+//     block = $generateNextBlock()
+//     console.log('mintBlock no-block count: ', count)
+//     return mintBlock(block, count, callback)
+//   }, 1000)
+// }
+
+const $startMinting = async () => {
+  // todo check this
+  mint = true
+  while (mint) {
+    const claims = $contractPool()
+    const flows = $flowPool()
+    await addFlowsToClaims({flows, claims})
+    const resolvedContracts = getResolvedContracts()
+    await signContracts({contracts: resolvedContracts})
+    const rawBlock = generateRawNextBlock({contracts: resolvedContracts})
+    const newBlock = await findBlock(rawBlock)
+
+    if (addBlockToChain(newBlock)) {
+      broadcastLatest()
+    }
+    blockMinted = false
   }
 }
 
-const handleReceivedTransaction = (transaction: Transaction) => {
-  addToTransactionPool(transaction, $unspentTxOuts())
+const $stopMinting = async () => {
+  mint = false
 }
 
-const $sendMeasurement = (mtIns: Flow[], mtOuts: Flow[]): Measurement => {
-  const mt: Measurement = createMeasurement(mtIns, mtOuts, getPrivateKey())
-  $addToMeasurementPool(mt)
-  broadCastMeasurementPool()
-  return mt
-}
-
-const mintBlock = (block: Block, count: number, callback: Function) => {
-  if (block) return callback(null, block)
-
-  setTimeout(function() {
-    // you can only mint a block per second due to timestamp
-    count++
-    block = $generateNextBlock()
-    console.log('mintBlock no-block count: ', count)
-    return mintBlock(block, count, callback)
-  }, 1000)
+const $blockMinted = async () => {
+  blockMinted = true
 }
 
 export {
   Block,
-  Payload,
   $blockchain,
-  $unspentTxOuts,
   getLatestBlock,
-  $sendTransaction,
-  $generateRawNextBlock,
-  $generateNextBlock,
-  $mintTransaction,
-  handleReceivedTransaction,
-  $myUnspentTransactionOutputs,
-  $getAccountBalance,
-  isValidBlockStructure,
-  replaceChain,
+  // replaceChain,
   addBlockToChain,
-  $sendMeasurement,
-  mintBlock
+  $startMinting,
+  $stopMinting
 }
