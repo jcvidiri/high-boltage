@@ -9,7 +9,7 @@ import {
   $resolvedContracts,
   $signContracts
 } from '../src/contract'
-import {$addFlowsToClaims, $generateRawNextBlock} from '../src/blockchain'
+import {$addFlowsToClaims, $generateRawNextBlock, $findBlock} from '../src/blockchain'
 import {toHexString, getCurrentTimestamp} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
@@ -113,6 +113,7 @@ describe('Mint test', async () => {
     expect(claims[0].measurements).to.deep.include(flows[0])
     expect(claims[1].measurements).to.deep.include(flows[1])
   })
+
   it('$getResolvedContracts. Expect ok.', async () => {
     const flows = await $flowPool()
     const claims = await $contractPool()
@@ -133,6 +134,7 @@ describe('Mint test', async () => {
       }, 0)
     )
   })
+
   it('$signContracts. Expect ok.', async () => {
     const flows = await $flowPool()
     const claims = await $contractPool()
@@ -150,6 +152,7 @@ describe('Mint test', async () => {
     expect(validSignature1).to.be.true
     expect(validSignature2).to.be.true
   })
+
   it('$generateRawNextBlock. Expect ok.', async () => {
     const flows = await $flowPool()
     const claims = await $contractPool()
@@ -170,10 +173,28 @@ describe('Mint test', async () => {
       .to.be.an('array')
     expect(rawBlock.contracts.length).to.be.equal(3)
   })
-  // it('$findBlock. Expect ok.', async () => {
-  //   // todo test
-  //   // const newBlock = await findBlock(rawBlock)
-  // })
+
+  it('$findBlock. Expect ok.', async () => {
+    const flows = await $flowPool()
+    const claims = await $contractPool()
+    await $addFlowsToClaims({flows, claims})
+    const resolvedContracts = await $resolvedContracts({claims})
+    const contracts = await $signContracts({contracts: resolvedContracts})
+    const rawBlock = await $generateRawNextBlock({contracts})
+    const newBlock = await $findBlock(rawBlock)
+
+    expect(newBlock).to.have.property('index', 1)
+    expect(newBlock).to.have.property('minterBalance', 50)
+    expect(newBlock).to.have.property('minterAddress', pubKey)
+    expect(newBlock).to.have.property(
+      'previousHash',
+      '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627'
+    )
+    expect(newBlock)
+      .to.have.property('contracts')
+      .to.be.an('array')
+    expect(newBlock.contracts.length).to.be.equal(3)
+  })
   // it('$startMinting & $stopMinting. Expect ok.', async () => {
   //   // todo test
   // })

@@ -147,10 +147,23 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
             .to.be.an('array');
         chai_1.expect(rawBlock.contracts.length).to.be.equal(3);
     }));
-    // it('$findBlock. Expect ok.', async () => {
-    //   // todo test
-    //   // const newBlock = await findBlock(rawBlock)
-    // })
+    mocha_1.it('$findBlock. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
+        const flows = yield flow_1.$flowPool();
+        const claims = yield contract_1.$contractPool();
+        yield blockchain_1.$addFlowsToClaims({ flows, claims });
+        const resolvedContracts = yield contract_1.$resolvedContracts({ claims });
+        const contracts = yield contract_1.$signContracts({ contracts: resolvedContracts });
+        const rawBlock = yield blockchain_1.$generateRawNextBlock({ contracts });
+        const newBlock = yield blockchain_1.$findBlock(rawBlock);
+        chai_1.expect(newBlock).to.have.property('index', 1);
+        chai_1.expect(newBlock).to.have.property('minterBalance', 50);
+        chai_1.expect(newBlock).to.have.property('minterAddress', pubKey);
+        chai_1.expect(newBlock).to.have.property('previousHash', '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627');
+        chai_1.expect(newBlock)
+            .to.have.property('contracts')
+            .to.be.an('array');
+        chai_1.expect(newBlock.contracts.length).to.be.equal(3);
+    }));
     // it('$startMinting & $stopMinting. Expect ok.', async () => {
     //   // todo test
     // })
