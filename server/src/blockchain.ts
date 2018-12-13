@@ -107,7 +107,7 @@ const adjustDifficulty = (lastBlock: Block, blockchain: Block[]) => {
   }
 }
 
-const generateRawNextBlock = ({contracts}: {contracts: Contract[]}) => {
+const $generateRawNextBlock = ({contracts}: {contracts: Contract[]}) => {
   const previousBlock: Block = getLatestBlock()
   const difficulty: number = getDifficulty($blockchain())
   const nextIndex: number = previousBlock.index + 1
@@ -348,7 +348,7 @@ const $startMinting = async () => {
     await $addFlowsToClaims({flows, claims})
     const resolvedContracts = await $resolvedContracts({claims})
     await $signContracts({contracts: resolvedContracts})
-    const rawBlock = generateRawNextBlock({contracts: resolvedContracts})
+    const rawBlock = $generateRawNextBlock({contracts: resolvedContracts})
     const newBlock = await findBlock(rawBlock)
 
     if (addBlockToChain(newBlock)) {
@@ -374,5 +374,6 @@ export {
   addBlockToChain,
   $startMinting,
   $stopMinting,
-  $addFlowsToClaims
+  $addFlowsToClaims,
+  $generateRawNextBlock
 }
