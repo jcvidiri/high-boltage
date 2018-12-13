@@ -4,7 +4,7 @@ import {BigNumber} from 'bignumber.js'
 import {broadcastLatest} from './p2p'
 // import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
 import {Flow} from './flow'
-import {Contract, $contractPool, $resolvedContracts} from './contract'
+import {Contract, $contractPool, $resolvedContracts, $signContracts} from './contract'
 import {$flowPool} from './flow'
 // import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
 // import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './flow-pool'
@@ -295,12 +295,6 @@ const processFlows = ({contracts}) => {
   //todo here // should be in flow.ts??
 }
 
-const signContracts = ({contracts}) => {
-  const pub = $getPublicFromWallet()
-  const priv = $getPrivateFromWallet()
-  //todo here
-}
-
 const addBlockToChain = (newBlock: Block): boolean => {
   if (!newBlock) return false
   if (isValidNewBlock(newBlock, getLatestBlock())) {
@@ -353,7 +347,7 @@ const $startMinting = async () => {
     const flows = $flowPool()
     await $addFlowsToClaims({flows, claims})
     const resolvedContracts = await $resolvedContracts({claims})
-    await signContracts({contracts: resolvedContracts})
+    await $signContracts({contracts: resolvedContracts})
     const rawBlock = generateRawNextBlock({contracts: resolvedContracts})
     const newBlock = await findBlock(rawBlock)
 

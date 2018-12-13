@@ -1,11 +1,19 @@
 import {expect} from 'chai'
 import {describe, it, beforeEach} from 'mocha'
 import {Flow, $flowPool, $cleanFlowPool, $addToFlowPool} from '../src/flow'
-import {Contract, $cleanContractPool, $addContractToPool, $contractPool, $resolvedContracts} from '../src/contract'
+import {
+  Contract,
+  $cleanContractPool,
+  $addContractToPool,
+  $contractPool,
+  $resolvedContracts,
+  $signContracts
+} from '../src/contract'
 import {$addFlowsToClaims} from '../src/blockchain'
 import {toHexString, getCurrentTimestamp} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
+import {$getPrivateFromWallet, $getPublicFromWallet} from '../src/wallet'
 const ec = new ecdsa.ec('secp256k1')
 
 describe('Mint test', async () => {
@@ -20,13 +28,12 @@ describe('Mint test', async () => {
   let contract1
   let contract2
   let contract3
+  const pubKey = $getPublicFromWallet()
+  const privKey = $getPrivateFromWallet()
 
   beforeEach(async () => {
     await $cleanFlowPool()
     await $cleanContractPool()
-    const key = await ec.genKeyPair()
-    const pubKey = await key.getPublic().encode('hex')
-    const privKey = await key.getPrivate().toString(16)
 
     contract1 = new Contract({
       claimant: pubKey,
@@ -127,8 +134,21 @@ describe('Mint test', async () => {
     )
   })
   it('$signContracts. Expect ok.', async () => {
-    // todo test
-    // await signContracts({contracts: resolvedContracts})
+    const flows = await $flowPool()
+    const claims = await $contractPool()
+    await $addFlowsToClaims({flows, claims})
+    const resolvedContracts = await $resolvedContracts({claims})
+
+    const contracts = await $signContracts({contracts: resolvedContracts})
+
+    const key = ec.keyFromPublic(pubKey, 'hex')
+    const validSignature0: boolean = await key.verify(contracts[0].id, contracts[0].signature)
+    const validSignature1: boolean = await key.verify(contracts[1].id, contracts[1].signature)
+    const validSignature2: boolean = await key.verify(contracts[2].id, contracts[2].signature)
+
+    expect(validSignature0).to.be.true
+    expect(validSignature1).to.be.true
+    expect(validSignature2).to.be.true
   })
   it('$generateRawNextBlock. Expect ok.', async () => {
     // todo test
