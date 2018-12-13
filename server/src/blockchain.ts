@@ -4,8 +4,7 @@ import {BigNumber} from 'bignumber.js'
 import {broadcastLatest} from './p2p'
 // import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
 import {Flow} from './flow'
-// import {Contract, $resolvedContracts} from './contract'
-import {Contract, $contractPool} from './contract'
+import {Contract, $contractPool, $resolvedContracts} from './contract'
 import {$flowPool} from './flow'
 // import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
 // import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './flow-pool'
@@ -295,12 +294,7 @@ const $addFlowsToClaims = async ({flows, claims}: {flows: Flow[]; claims: Contra
 const processFlows = ({contracts}) => {
   //todo here // should be in flow.ts??
 }
-const getResolvedContracts = (): Contract[] => {
-  //todo here
-  // loop though claims and check resolved?
 
-  return [new Contract({claimant: 'asd', amount: 50, price: 50, expDate: 12314434})]
-}
 const signContracts = ({contracts}) => {
   const pub = $getPublicFromWallet()
   const priv = $getPrivateFromWallet()
@@ -358,7 +352,7 @@ const $startMinting = async () => {
     const claims = $contractPool()
     const flows = $flowPool()
     await $addFlowsToClaims({flows, claims})
-    const resolvedContracts = getResolvedContracts()
+    const resolvedContracts = await $resolvedContracts({claims})
     await signContracts({contracts: resolvedContracts})
     const rawBlock = generateRawNextBlock({contracts: resolvedContracts})
     const newBlock = await findBlock(rawBlock)
