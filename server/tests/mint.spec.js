@@ -24,8 +24,10 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
     });
     let flow1;
     let flow2;
+    let flow3;
     let contract1;
     let contract2;
+    let contract3;
     mocha_1.beforeEach(() => __awaiter(this, void 0, void 0, function* () {
         yield flow_1.$cleanFlowPool();
         yield contract_1.$cleanContractPool();
@@ -36,16 +38,23 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
             claimant: pubKey,
             amount: 20,
             price: 900,
-            expDate: utils_1.getCurrentTimestamp() + 1000
+            expDate: utils_1.getCurrentTimestamp()
         });
         contract2 = new contract_1.Contract({
             claimant: pubKey,
             amount: 10,
             price: 890,
-            expDate: utils_1.getCurrentTimestamp() + 1000
+            expDate: utils_1.getCurrentTimestamp()
+        });
+        contract3 = new contract_1.Contract({
+            claimant: pubKey,
+            amount: 5,
+            price: 800,
+            expDate: utils_1.getCurrentTimestamp() + 10000
         });
         yield contract_1.$addContractToPool(contract1);
         yield contract_1.$addContractToPool(contract2);
+        yield contract_1.$addContractToPool(contract3);
         flow1 = {
             id: '',
             timestamp: utils_1.getCurrentTimestamp(),
@@ -62,14 +71,26 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
             claimId: contract2.claimId,
             signature: ''
         };
+        flow3 = {
+            id: '',
+            timestamp: utils_1.getCurrentTimestamp(),
+            generator: pubKey,
+            amount: 5.001,
+            claimId: contract3.claimId,
+            signature: ''
+        };
         const flow1Hash = yield CryptoJS.SHA256(flow1.timestamp + flow1.generator + flow1.amount + flow1.claimId).toString();
         const flow2Hash = yield CryptoJS.SHA256(flow2.timestamp + flow2.generator + flow2.amount + flow2.claimId).toString();
+        const flow3Hash = yield CryptoJS.SHA256(flow3.timestamp + flow3.generator + flow3.amount + flow3.claimId).toString();
         flow1.id = flow1Hash;
         flow2.id = flow2Hash;
+        flow3.id = flow3Hash;
         flow1.signature = yield sign(privKey, flow1.id);
         flow2.signature = yield sign(privKey, flow2.id);
+        flow3.signature = yield sign(privKey, flow3.id);
         yield flow_1.$addToFlowPool(flow1);
         yield flow_1.$addToFlowPool(flow2);
+        yield flow_1.$addToFlowPool(flow3);
     }));
     mocha_1.it('$addFlowsToClaims. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
         const flows = yield flow_1.$flowPool();
@@ -81,17 +102,36 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
         chai_1.expect(claims[1].measurements).to.deep.include(flows[1]);
     }));
     mocha_1.it('$getResolvedContracts. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
-        // const resolvedContracts = getResolvedContracts()
+        const flows = yield flow_1.$flowPool();
+        const claims = yield contract_1.$contractPool();
+        yield blockchain_1.$addFlowsToClaims({ flows, claims });
+        const resolvedContracts = yield contract_1.$resolvedContracts({ claims });
+        const timestamp = yield utils_1.getCurrentTimestamp();
+        chai_1.expect(resolvedContracts).to.be.an('array');
+        chai_1.expect(resolvedContracts[0].measurements).to.deep.include(flows[0]);
+        chai_1.expect(resolvedContracts[1].measurements).to.deep.include(flows[1]);
+        chai_1.expect(resolvedContracts[2].measurements).to.deep.include(flows[2]);
+        chai_1.expect(resolvedContracts[0].expDate).to.be.equal(timestamp);
+        chai_1.expect(resolvedContracts[1].expDate).to.be.equal(timestamp);
+        chai_1.expect(timestamp).to.be.below(resolvedContracts[2].expDate);
+        chai_1.expect(resolvedContracts[2].amount).to.be.below(resolvedContracts[2].measurements.reduce((acc, flow) => {
+            return acc + flow.amount;
+        }, 0));
     }));
     mocha_1.it('$signContracts. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
+        // todo test
         // await signContracts({contracts: resolvedContracts})
     }));
     mocha_1.it('$generateRawNextBlock. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
+        // todo test
         // const rawBlock = generateRawNextBlock({contracts: resolvedContracts})
     }));
     mocha_1.it('$findBlock. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
+        // todo test
         // const newBlock = await findBlock(rawBlock)
     }));
-    mocha_1.it('$startMinting & $stopMinting. Expect ok.', () => __awaiter(this, void 0, void 0, function* () { }));
+    mocha_1.it('$startMinting & $stopMinting. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
+        // todo test
+    }));
 }));
 //# sourceMappingURL=mint.spec.js.map

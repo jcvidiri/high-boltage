@@ -68,9 +68,22 @@ const $addContractToPool = (contract: Contract) => {
   contractPool.push(contract)
 }
 
-const $resolvedContracts = (): Contract[] => {
-  // todo here
-  return $contractPool()
+const $resolvedContracts = async ({claims}: {claims: Contract[]}): Promise<Contract[]> => {
+  let resolvedContracts: Contract[] = []
+  const timestamp = await getCurrentTimestamp()
+
+  await claims.map(async cl => {
+    if (
+      cl.expDate < timestamp ||
+      cl.amount <=
+        (await cl.measurements.reduce((acc, flow) => {
+          return acc + flow.amount
+        }, 0))
+    )
+      resolvedContracts.push(cl)
+  })
+
+  return resolvedContracts
 }
 
 export {Contract, $contractPool, $cleanContractPool, $addContractToPool, ContractInput, $resolvedContracts}
