@@ -9,7 +9,7 @@ import {
   $resolvedContracts,
   $signContracts
 } from '../src/contract'
-import {$addFlowsToClaims} from '../src/blockchain'
+import {$addFlowsToClaims, $generateRawNextBlock} from '../src/blockchain'
 import {toHexString, getCurrentTimestamp} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
@@ -151,14 +151,30 @@ describe('Mint test', async () => {
     expect(validSignature2).to.be.true
   })
   it('$generateRawNextBlock. Expect ok.', async () => {
-    // todo test
-    // const rawBlock = generateRawNextBlock({contracts: resolvedContracts})
+    const flows = await $flowPool()
+    const claims = await $contractPool()
+    await $addFlowsToClaims({flows, claims})
+    const resolvedContracts = await $resolvedContracts({claims})
+    const contracts = await $signContracts({contracts: resolvedContracts})
+
+    const rawBlock = await $generateRawNextBlock({contracts})
+
+    expect(rawBlock).to.have.property('difficulty', 0)
+    expect(rawBlock).to.have.property('index', 1)
+    expect(rawBlock).to.have.property(
+      'previousHash',
+      '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627'
+    )
+    expect(rawBlock)
+      .to.have.property('contracts')
+      .to.be.an('array')
+    expect(rawBlock.contracts.length).to.be.equal(3)
   })
-  it('$findBlock. Expect ok.', async () => {
-    // todo test
-    // const newBlock = await findBlock(rawBlock)
-  })
-  it('$startMinting & $stopMinting. Expect ok.', async () => {
-    // todo test
-  })
+  // it('$findBlock. Expect ok.', async () => {
+  //   // todo test
+  //   // const newBlock = await findBlock(rawBlock)
+  // })
+  // it('$startMinting & $stopMinting. Expect ok.', async () => {
+  //   // todo test
+  // })
 })

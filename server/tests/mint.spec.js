@@ -133,15 +133,26 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
         chai_1.expect(validSignature2).to.be.true;
     }));
     mocha_1.it('$generateRawNextBlock. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
-        // todo test
-        // const rawBlock = generateRawNextBlock({contracts: resolvedContracts})
+        const flows = yield flow_1.$flowPool();
+        const claims = yield contract_1.$contractPool();
+        yield blockchain_1.$addFlowsToClaims({ flows, claims });
+        const resolvedContracts = yield contract_1.$resolvedContracts({ claims });
+        const contracts = yield contract_1.$signContracts({ contracts: resolvedContracts });
+        const rawBlock = yield blockchain_1.$generateRawNextBlock({ contracts });
+        chai_1.expect(rawBlock).to.have.property('difficulty', 0);
+        chai_1.expect(rawBlock).to.have.property('index', 1);
+        chai_1.expect(rawBlock).to.have.property('previousHash', '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627');
+        chai_1.expect(rawBlock)
+            .to.have.property('contracts')
+            .to.be.an('array');
+        chai_1.expect(rawBlock.contracts.length).to.be.equal(3);
     }));
-    mocha_1.it('$findBlock. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
-        // todo test
-        // const newBlock = await findBlock(rawBlock)
-    }));
-    mocha_1.it('$startMinting & $stopMinting. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
-        // todo test
-    }));
+    // it('$findBlock. Expect ok.', async () => {
+    //   // todo test
+    //   // const newBlock = await findBlock(rawBlock)
+    // })
+    // it('$startMinting & $stopMinting. Expect ok.', async () => {
+    //   // todo test
+    // })
 }));
 //# sourceMappingURL=mint.spec.js.map
