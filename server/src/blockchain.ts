@@ -120,7 +120,7 @@ const $generateRawNextBlock = ({contracts}: {contracts: Contract[]}) => {
   }
 }
 
-const findBlock = ({
+const $findBlock = ({
   index,
   previousHash,
   contracts,
@@ -133,6 +133,7 @@ const findBlock = ({
 }): Block => {
   let pastTimestamp: number = 0
   blockMinted = false
+  let minterBalance = 50 // todo check this
   while (!blockMinted) {
     let timestamp: number = getCurrentTimestamp()
     if (pastTimestamp !== timestamp) {
@@ -143,11 +144,12 @@ const findBlock = ({
         contracts,
         difficulty,
         // minterBalance: $getBalance(), // todo check this
-        minterBalance: 50,
+        minterBalance,
         minterAddress: $getPublicFromWallet()
       })
 
-      if (isBlockStakingValid(previousHash, $getPublicFromWallet(), timestamp, 50, difficulty, index)) {
+      if (isBlockStakingValid(previousHash, $getPublicFromWallet(), timestamp, minterBalance, difficulty, index)) {
+        blockMinted = true
         return new Block(
           index,
           hash,
@@ -155,7 +157,7 @@ const findBlock = ({
           timestamp,
           contracts,
           difficulty,
-          50, // todo check this
+          minterBalance, // todo check this
           $getPublicFromWallet()
         )
       }
@@ -246,7 +248,7 @@ const isBlockStakingValid = (
 ): boolean => {
   difficulty = difficulty + 1
 
-  if (index <= mintingWithoutCoinIndex) balance = balance + 1
+  // if (index <= mintingWithoutCoinIndex) balance = balance + 1
 
   const balanceOverDifficulty = new BigNumber(2) // 2^256 * balance / diff
     .exponentiatedBy(256)
@@ -349,7 +351,7 @@ const $startMinting = async () => {
     const resolvedContracts = await $resolvedContracts({claims})
     await $signContracts({contracts: resolvedContracts})
     const rawBlock = $generateRawNextBlock({contracts: resolvedContracts})
-    const newBlock = await findBlock(rawBlock)
+    const newBlock = await $findBlock(rawBlock)
 
     if (addBlockToChain(newBlock)) {
       broadcastLatest()
@@ -375,5 +377,6 @@ export {
   $startMinting,
   $stopMinting,
   $addFlowsToClaims,
-  $generateRawNextBlock
+  $generateRawNextBlock,
+  $findBlock
 }
