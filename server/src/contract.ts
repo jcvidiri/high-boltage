@@ -45,12 +45,15 @@ class Contract {
   }
 }
 
-const signContract = (contract: Contract): Contract => {
-  const privateKey = $getPrivateFromWallet()
-  contract.id = CryptoJS.SHA256(contract.claimId + contract.measurements.map(m => m.id)).toString()
-  const key = ec.keyFromPrivate(privateKey, 'hex')
-  contract.signature = toHexString(key.sign(contract.id).toDER())
-  return contract
+const $signContracts = async ({contracts}: {contracts: Contract[]}): Promise<Contract[]> => {
+  const privateKey = await $getPrivateFromWallet()
+  const key = await ec.keyFromPrivate(privateKey, 'hex')
+
+  await contracts.map(async ct => {
+    ct.id = await CryptoJS.SHA256(ct.claimId + ct.measurements.map(m => m.id)).toString()
+    ct.signature = await toHexString(await key.sign(ct.id).toDER())
+  })
+  return contracts
 }
 
 let contractPool: Contract[] = []
@@ -86,4 +89,12 @@ const $resolvedContracts = async ({claims}: {claims: Contract[]}): Promise<Contr
   return resolvedContracts
 }
 
-export {Contract, $contractPool, $cleanContractPool, $addContractToPool, ContractInput, $resolvedContracts}
+export {
+  Contract,
+  $contractPool,
+  $cleanContractPool,
+  $addContractToPool,
+  ContractInput,
+  $resolvedContracts,
+  $signContracts
+}

@@ -165,8 +165,8 @@
 //   }
 //   const address = referencedUTxOut.address
 
-//   const key = ec.keyFromPublic(address, 'hex')
-//   const validSignature: boolean = key.verify(transaction.id, txIn.signature)
+// const key = ec.keyFromPublic(address, 'hex')
+// const validSignature: boolean = key.verify(transaction.id, txIn.signature)
 //   if (!validSignature) {
 //     // console.log(
 //     //   'invalid txIn signature: %s txId: %s address: %s',

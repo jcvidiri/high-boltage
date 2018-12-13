@@ -16,6 +16,7 @@ const blockchain_1 = require("../src/blockchain");
 const utils_1 = require("../src/utils");
 const CryptoJS = require("crypto-js");
 const ecdsa = require("elliptic");
+const wallet_1 = require("../src/wallet");
 const ec = new ecdsa.ec('secp256k1');
 mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* () {
     const sign = (privateKey, id) => __awaiter(this, void 0, void 0, function* () {
@@ -28,12 +29,11 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
     let contract1;
     let contract2;
     let contract3;
+    const pubKey = wallet_1.$getPublicFromWallet();
+    const privKey = wallet_1.$getPrivateFromWallet();
     mocha_1.beforeEach(() => __awaiter(this, void 0, void 0, function* () {
         yield flow_1.$cleanFlowPool();
         yield contract_1.$cleanContractPool();
-        const key = yield ec.genKeyPair();
-        const pubKey = yield key.getPublic().encode('hex');
-        const privKey = yield key.getPrivate().toString(16);
         contract1 = new contract_1.Contract({
             claimant: pubKey,
             amount: 20,
@@ -119,8 +119,18 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
         }, 0));
     }));
     mocha_1.it('$signContracts. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
-        // todo test
-        // await signContracts({contracts: resolvedContracts})
+        const flows = yield flow_1.$flowPool();
+        const claims = yield contract_1.$contractPool();
+        yield blockchain_1.$addFlowsToClaims({ flows, claims });
+        const resolvedContracts = yield contract_1.$resolvedContracts({ claims });
+        const contracts = yield contract_1.$signContracts({ contracts: resolvedContracts });
+        const key = ec.keyFromPublic(pubKey, 'hex');
+        const validSignature0 = yield key.verify(contracts[0].id, contracts[0].signature);
+        const validSignature1 = yield key.verify(contracts[1].id, contracts[1].signature);
+        const validSignature2 = yield key.verify(contracts[2].id, contracts[2].signature);
+        chai_1.expect(validSignature0).to.be.true;
+        chai_1.expect(validSignature1).to.be.true;
+        chai_1.expect(validSignature2).to.be.true;
     }));
     mocha_1.it('$generateRawNextBlock. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
         // todo test
