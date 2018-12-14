@@ -1,5 +1,5 @@
 // import {$getSockets} from '../../p2p'
-// import {$getAccountBalance, $blockchain} from '../../blockchain'
+import {$blockchain} from '../../blockchain'
 // import {$getPublicFromWallet} from '../../wallet'
 import * as _ from 'lodash'
 import {$contractPool} from '../../contract'
@@ -11,7 +11,7 @@ var resolvers = {
     // balance,
     // address,
     // block,
-    // blockchain,
+    blockchain,
     // transaction,
     // unspentTransactionOutputs,
     // myUnspentTransactionOutputs,
@@ -39,9 +39,9 @@ export default resolvers
 //   return _.find($blockchain(), {hash})
 // }
 
-// async function blockchain() {
-//   return $blockchain()
-// }
+async function blockchain() {
+  return $blockchain()
+}
 
 async function flowPool() {
   return $flowPool()

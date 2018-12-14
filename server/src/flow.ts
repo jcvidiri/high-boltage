@@ -41,6 +41,7 @@ const $cleanFlowPool = () => {
 }
 
 const $addToFlowPool = (fl: Flow) => {
+  // todo validate hash is ok
   if (!validFlowSignature(fl) || !isValidFlowStructure(fl)) {
     throw Error('Trying to add invalid fl to pool')
   }
@@ -50,11 +51,14 @@ const $addToFlowPool = (fl: Flow) => {
   // }
 
   flowPool.push(fl)
+  return fl
 }
 
 const validFlowSignature = (flow: Flow): boolean => {
   const key = ec.keyFromPublic(flow.generator, 'hex')
   const validSignature: boolean = key.verify(flow.id, flow.signature)
+  console.log('\n --> validSignature: ', validSignature)
+
   if (!validSignature) return false
 
   return true
@@ -64,14 +68,21 @@ const isValidFlowStructure = (flow: Flow): boolean => {
   if (
     flow == null ||
     typeof flow.id !== 'string' ||
-    typeof flow.timestamp !== 'number' ||
+    // typeof flow.timestamp !== 'string' ||
     typeof flow.generator !== 'string' ||
     typeof flow.amount !== 'number' ||
     typeof flow.claimId !== 'string' ||
     typeof flow.signature !== 'string'
-  )
-    return false
+  ) {
+    console.log('typeof flow.id', typeof flow.id)
+    // console.log('typeof flow.timestamp', typeof flow.timestamp)
+    console.log('typeof flow.generator', typeof flow.generator)
+    console.log('typeof flow.amount', typeof flow.amount)
+    console.log('typeof flow.claimId', typeof flow.claimId)
+    console.log('typeof flow.signature', typeof flow.signature)
 
+    return false
+  }
   return true
 }
 
@@ -84,9 +95,7 @@ const $removeFlows = async (newBlock: Block) => {
 }
 
 const removeFlowById = async (id: String) => {
-  await _.remove(flowPool, async fl => {
-    fl.id === id
-  })
+  await _.remove(flowPool, fl => fl.id === id)
 }
 
 // valid address is a valid ecdsa public key in the 04 + X-coordinate + Y-coordinate format

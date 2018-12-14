@@ -1,19 +1,19 @@
-# type Block {
-#   hash: String
-#   contracts: [Contract]
-#   index: String
-#   timestamp: String
-#   difficulty: String
-#   previousHash: String
-#   minterBalance: String
-#   minterAddress: String
-# }
+type Block {
+  index: String
+  hash: String
+  previousHash: String
+  timestamp: String
+  contracts: [Contract]
+  difficulty: Int
+  minterBalance: Float
+  minterAddress: String
+}
 
 type Flow {
   id: String
   timestamp: String
   generator: String
-  amount: String
+  amount: Float
   claimId: String
   signature: String
 }
@@ -24,8 +24,8 @@ type Contract {
   claimant: String
   timestamp: String
   expDate: String
-  amount: String
-  price: String
+  amount: Float
+  price: Float
   measurements: [Flow]
   signature: String
 }
@@ -33,8 +33,8 @@ type Contract {
 type RawContract {
   timestamp: String
   claimant: String
-  amount: String
-  price: String
+  amount: Float
+  price: Float
   expDate: String
   claimId: String
   measurements: [Flow]
