@@ -91,13 +91,11 @@ const $resolvedContracts = async ({claims}: {claims: Contract[]}): Promise<Contr
 }
 
 const $removeClaims = async (newBlock: Block) => {
-  await newBlock.contracts.map(async ct => await removeClaimById(ct.id))
+  await newBlock.contracts.map(async ct => await removeClaimById(ct.claimId))
 }
 
 const removeClaimById = async (id: String) => {
-  await _.remove(contractPool, async ct => {
-    ct.id === id
-  })
+  await _.remove(contractPool, ct => ct.claimId === id)
 }
 
 export {

@@ -8,7 +8,7 @@ import {Contract, $contractPool, $resolvedContracts, $signContracts, $removeClai
 import {$flowPool} from './flow'
 // import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
 // import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './flow-pool'
-import {getCurrentTimestamp} from './utils'
+import {getCurrentTimestamp, timeout} from './utils'
 import {
   // createTransaction,
   // findUnspentTxOuts,
@@ -120,7 +120,7 @@ const $generateRawNextBlock = ({contracts}: {contracts: Contract[]}) => {
   }
 }
 
-const $findBlock = ({
+const $findBlock = async ({
   index,
   previousHash,
   contracts,
@@ -130,7 +130,7 @@ const $findBlock = ({
   previousHash: string
   contracts: Contract[]
   difficulty: number
-}): Block => {
+}): Promise<Block> => {
   let pastTimestamp: number = 0
   blockMinted = false
   let minterBalance = 50 // todo check this
@@ -162,6 +162,7 @@ const $findBlock = ({
         )
       }
       pastTimestamp = timestamp
+      await timeout(500)
     }
   }
 }
@@ -293,14 +294,14 @@ const $addFlowsToClaims = async ({flows, claims}: {flows: Flow[]; claims: Contra
   })
 }
 
-const processFlows = ({contracts}) => {
-  //todo here // should be in flow.ts??
-}
+// const processFlows = ({contracts}) => {
+//   //todo here // should be in flow.ts??
+// }
 
 const addBlockToChain = (newBlock: Block): boolean => {
   if (!newBlock) return false
   if (isValidNewBlock(newBlock, getLatestBlock())) {
-    processFlows({contracts: newBlock.contracts}) // remove flows in contracts from flow-pool
+    // processFlows({contracts: newBlock.contracts}) // remove flows in contracts from flow-pool
     blockchain.push(newBlock)
     return true
   }
@@ -348,23 +349,31 @@ const $startMinting = async () => {
 
     const claims = await $contractPool()
     const flows = await $flowPool()
-    if (!flows.length || !claims.length) return
-    process.stdout.write('. ')
-
+    process.stdout.write(' ... ' + flows.length + ' flows | ' + claims.length + ' claims ')
+    if (!flows.length || !claims.length) {
+      await timeout(2000)
+      continue
+    }
     await $addFlowsToClaims({flows, claims})
-    process.stdout.write('. ')
+    process.stdout.write('.')
     const resolvedContracts = await $resolvedContracts({claims})
-    process.stdout.write('. ')
-    if (!resolvedContracts.length) return
+    process.stdout.write(' ... ' + resolvedContracts.length + ' resolved contracts ')
+    if (!resolvedContracts.length) {
+      await timeout(2000)
+      continue
+    }
     await $signContracts({contracts: resolvedContracts})
-    process.stdout.write('. ')
+    process.stdout.write('..')
     const rawBlock = $generateRawNextBlock({contracts: resolvedContracts})
-    process.stdout.write('. ')
+    console.log('\n --> resolvedContracts.length: ', resolvedContracts.length)
+    console.log('\n --> resolvedContracts[0].measurements.length: ', resolvedContracts[0].measurements.length)
+
+    process.stdout.write('..')
     const newBlock = await $findBlock(rawBlock)
-    process.stdout.write('. ')
+    process.stdout.write('..')
 
     if (addBlockToChain(newBlock)) {
-      process.stdout.write(' new Block!')
+      process.stdout.write(' new Block! ')
 
       broadcastLatest()
       await $removeClaims(newBlock)
@@ -376,6 +385,8 @@ const $startMinting = async () => {
 
 const $stopMinting = async () => {
   mint = false
+  process.stdout.write('\n\n--> STOP minting <--- ')
+  return {minting: false}
 }
 
 const $blockMinted = async () => {

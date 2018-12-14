@@ -2,14 +2,20 @@ input FlowInput {
   id: String
   timestamp: String
   generator: String
-  amount: String
+  amount: Float
   claimId: String
   signature: String
 }
 
+input CreateFlowInput {
+  generator: String
+  amount: Float
+  claimId: String
+}
+
 input ContractInput {
   claimant: String
-  amount: String
-  price: String
+  amount: Float
+  price: Float
   expDate: String
 }

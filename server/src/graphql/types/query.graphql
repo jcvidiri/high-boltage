@@ -3,7 +3,7 @@ type Query {
   # balance: String
   # address: String
   # block(hash: String!): Block
-  # blockchain: [Block]
+  blockchain: [Block]
   # transaction(id: String!): Transaction
   flowPool: [Flow]
   # measurementPool: [Measurement]
