@@ -9,8 +9,15 @@ import {
   $resolvedContracts,
   $signContracts
 } from '../src/contract'
-import {$addFlowsToClaims, $generateRawNextBlock, $findBlock} from '../src/blockchain'
-import {toHexString, getCurrentTimestamp} from '../src/utils'
+import {
+  $addFlowsToClaims,
+  $generateRawNextBlock,
+  $findBlock,
+  $startMinting,
+  $stopMinting,
+  $blockchain
+} from '../src/blockchain'
+import {toHexString, getCurrentTimestamp, timeout} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
 import {$getPrivateFromWallet, $getPublicFromWallet} from '../src/wallet'
@@ -195,7 +202,18 @@ describe('Mint test', async () => {
       .to.be.an('array')
     expect(newBlock.contracts.length).to.be.equal(3)
   })
-  // it('$startMinting & $stopMinting. Expect ok.', async () => {
-  //   // todo test
-  // })
+  it('$startMinting & $stopMinting. Expect ok.', async () => {
+    $startMinting()
+    await timeout(300)
+    await $stopMinting()
+
+    const blockchain = $blockchain()
+    expect(blockchain.length).to.be.greaterThan(1)
+
+    const flows = await $flowPool()
+    const claims = await $contractPool()
+
+    expect(flows.length).to.be.equal(0)
+    expect(claims.length).to.be.equal(0)
+  })
 })

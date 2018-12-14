@@ -5,6 +5,7 @@ import {Flow} from './flow'
 import {getCurrentTimestamp} from './utils'
 import {toHexString} from './utils'
 import {$getPrivateFromWallet} from './wallet'
+import {Block} from './blockchain'
 const ec = new ecdsa.ec('secp256k1')
 
 class ContractInput {
@@ -89,6 +90,16 @@ const $resolvedContracts = async ({claims}: {claims: Contract[]}): Promise<Contr
   return resolvedContracts
 }
 
+const $removeClaims = async (newBlock: Block) => {
+  await newBlock.contracts.map(async ct => await removeClaimById(ct.id))
+}
+
+const removeClaimById = async (id: String) => {
+  await _.remove(contractPool, async ct => {
+    ct.id === id
+  })
+}
+
 export {
   Contract,
   $contractPool,
@@ -96,5 +107,6 @@ export {
   $addContractToPool,
   ContractInput,
   $resolvedContracts,
-  $signContracts
+  $signContracts,
+  $removeClaims
 }
