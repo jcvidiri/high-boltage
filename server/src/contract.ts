@@ -5,6 +5,7 @@ import {Flow} from './flow'
 import {getCurrentTimestamp} from './utils'
 import {toHexString} from './utils'
 import {$getPrivateFromWallet} from './wallet'
+import {Block} from './blockchain'
 const ec = new ecdsa.ec('secp256k1')
 
 class ContractInput {
@@ -45,12 +46,15 @@ class Contract {
   }
 }
 
-const signContract = (contract: Contract): Contract => {
-  const privateKey = $getPrivateFromWallet()
-  contract.id = CryptoJS.SHA256(contract.claimId + contract.measurements.map(m => m.id)).toString()
-  const key = ec.keyFromPrivate(privateKey, 'hex')
-  contract.signature = toHexString(key.sign(contract.id).toDER())
-  return contract
+const $signContracts = async ({contracts}: {contracts: Contract[]}): Promise<Contract[]> => {
+  const privateKey = await $getPrivateFromWallet()
+  const key = await ec.keyFromPrivate(privateKey, 'hex')
+
+  await contracts.map(async ct => {
+    ct.id = await CryptoJS.SHA256(ct.claimId + ct.measurements.map(m => m.id)).toString()
+    ct.signature = await toHexString(await key.sign(ct.id).toDER())
+  })
+  return contracts
 }
 
 let contractPool: Contract[] = []
@@ -64,13 +68,45 @@ const $cleanContractPool = () => {
   contractPool = []
 }
 
-const $addToContractPool = (contract: Contract) => {
+const $addContractToPool = (contract: Contract) => {
   contractPool.push(contract)
 }
 
-const $resolvedContracts = (): Contract[] => {
-  // todo here
-  return $contractPool()
+const $resolvedContracts = async ({claims}: {claims: Contract[]}): Promise<Contract[]> => {
+  let resolvedContracts: Contract[] = []
+  const timestamp = await getCurrentTimestamp()
+
+  await claims.map(async cl => {
+    if (
+      cl.expDate < timestamp ||
+      cl.amount <=
+        (await cl.measurements.reduce((acc, flow) => {
+          return acc + flow.amount
+        }, 0))
+    )
+      resolvedContracts.push(cl)
+  })
+
+  return resolvedContracts
 }
 
-export {Contract, $contractPool, $cleanContractPool, $addToContractPool, ContractInput, $resolvedContracts}
+const $removeClaims = async (newBlock: Block) => {
+  await newBlock.contracts.map(async ct => await removeClaimById(ct.id))
+}
+
+const removeClaimById = async (id: String) => {
+  await _.remove(contractPool, async ct => {
+    ct.id === id
+  })
+}
+
+export {
+  Contract,
+  $contractPool,
+  $cleanContractPool,
+  $addContractToPool,
+  ContractInput,
+  $resolvedContracts,
+  $signContracts,
+  $removeClaims
+}
