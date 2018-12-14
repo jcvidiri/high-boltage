@@ -12,6 +12,7 @@ npm-debug.log
 server/src/**/*.js
 server/src/**/*.map
 server/tests/*.map
+server/tests/*.js
 
 # build
 server/build/
