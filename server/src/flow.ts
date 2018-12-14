@@ -1,6 +1,7 @@
 // import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
 import * as _ from 'lodash'
+import {Block} from './blockchain'
 // import {toHexString, getCurrentTimestamp} from './utils'
 
 const ec = new ecdsa.ec('secp256k1')
@@ -74,6 +75,20 @@ const isValidFlowStructure = (flow: Flow): boolean => {
   return true
 }
 
+const $removeFlows = async (newBlock: Block) => {
+  await newBlock.contracts.map(async ct => {
+    await ct.measurements.map(async mt => {
+      await removeFlowById(mt.id)
+    })
+  })
+}
+
+const removeFlowById = async (id: String) => {
+  await _.remove(flowPool, async fl => {
+    fl.id === id
+  })
+}
+
 // valid address is a valid ecdsa public key in the 04 + X-coordinate + Y-coordinate format
 // const isValidAddress = (address: string): boolean => {
 //   if (address.length !== 130) {
@@ -86,4 +101,4 @@ const isValidFlowStructure = (flow: Flow): boolean => {
 //   return true
 // }
 
-export {Flow, $flowPool, $addToFlowPool, $cleanFlowPool}
+export {Flow, $flowPool, $addToFlowPool, $cleanFlowPool, $removeFlows}

@@ -164,8 +164,16 @@ mocha_1.describe('Mint test', () => __awaiter(this, void 0, void 0, function* ()
             .to.be.an('array');
         chai_1.expect(newBlock.contracts.length).to.be.equal(3);
     }));
-    // it('$startMinting & $stopMinting. Expect ok.', async () => {
-    //   // todo test
-    // })
+    mocha_1.it('$startMinting & $stopMinting. Expect ok.', () => __awaiter(this, void 0, void 0, function* () {
+        blockchain_1.$startMinting();
+        yield utils_1.timeout(300);
+        yield blockchain_1.$stopMinting();
+        const blockchain = blockchain_1.$blockchain();
+        chai_1.expect(blockchain.length).to.be.greaterThan(1);
+        const flows = yield flow_1.$flowPool();
+        const claims = yield contract_1.$contractPool();
+        chai_1.expect(flows.length).to.be.equal(0);
+        chai_1.expect(claims.length).to.be.equal(0);
+    }));
 }));
 //# sourceMappingURL=mint.spec.js.map

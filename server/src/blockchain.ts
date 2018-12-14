@@ -3,8 +3,8 @@ import * as _ from 'lodash'
 import {BigNumber} from 'bignumber.js'
 import {broadcastLatest} from './p2p'
 // import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
-import {Flow} from './flow'
-import {Contract, $contractPool, $resolvedContracts, $signContracts} from './contract'
+import {Flow, $removeFlows} from './flow'
+import {Contract, $contractPool, $resolvedContracts, $signContracts, $removeClaims} from './contract'
 import {$flowPool} from './flow'
 // import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
 // import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './flow-pool'
@@ -20,7 +20,7 @@ import {
 
 const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
-const mintingWithoutCoinIndex = 100
+// const mintingWithoutCoinIndex = 100
 
 class Block {
   public index: number
@@ -342,19 +342,33 @@ const addBlockToChain = (newBlock: Block): boolean => {
 // }
 
 const $startMinting = async () => {
-  // todo check this
   mint = true
   while (mint) {
-    const claims = $contractPool()
-    const flows = $flowPool()
+    process.stdout.write('\n--> minting ')
+
+    const claims = await $contractPool()
+    const flows = await $flowPool()
+    if (!flows.length || !claims.length) return
+    process.stdout.write('. ')
+
     await $addFlowsToClaims({flows, claims})
+    process.stdout.write('. ')
     const resolvedContracts = await $resolvedContracts({claims})
+    process.stdout.write('. ')
+    if (!resolvedContracts.length) return
     await $signContracts({contracts: resolvedContracts})
+    process.stdout.write('. ')
     const rawBlock = $generateRawNextBlock({contracts: resolvedContracts})
+    process.stdout.write('. ')
     const newBlock = await $findBlock(rawBlock)
+    process.stdout.write('. ')
 
     if (addBlockToChain(newBlock)) {
+      process.stdout.write(' new Block!')
+
       broadcastLatest()
+      await $removeClaims(newBlock)
+      await $removeFlows(newBlock)
     }
     blockMinted = false
   }
