@@ -39,3 +39,8 @@ type RawContract {
   claimId: String
   measurements: [Flow]
 }
+
+type Balance {
+  balance: Int
+  minterAddress: String
+}

@@ -54,6 +54,11 @@ class Block {
   }
 }
 
+class Balance {
+  balance: number
+  minterAddress: string
+}
+
 const genesisContract: Contract = {
   id: '60f5eb794e7e7133c2a64d741fd1ab76b877bd3158e3ca5d6942cfecedf2e41f',
   claimId: '60f5eb794e7e7133c2a64d741fd1ab76b877bd3158e3ca5d6942cfecedf2e41f',
@@ -74,7 +79,7 @@ const genesisBlock: Block = new Block(
   1537145550,
   [genesisContract],
   0,
-  500,
+  0,
   '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0'
 )
 
@@ -133,7 +138,7 @@ const $findBlock = async ({
 }): Promise<Block> => {
   let pastTimestamp: number = 0
   blockMinted = false
-  let minterBalance = 50 // todo check this
+  let minterBalance = (await $getMinterBalance()) + 1
   while (!blockMinted) {
     let timestamp: number = getCurrentTimestamp()
     if (pastTimestamp !== timestamp) {
@@ -143,7 +148,6 @@ const $findBlock = async ({
         timestamp,
         contracts,
         difficulty,
-        // minterBalance: $getBalance(), // todo check this
         minterBalance,
         minterAddress: $getPublicFromWallet()
       })
@@ -157,7 +161,7 @@ const $findBlock = async ({
           timestamp,
           contracts,
           difficulty,
-          minterBalance, // todo check this
+          minterBalance,
           $getPublicFromWallet()
         )
       }
@@ -167,6 +171,27 @@ const $findBlock = async ({
   }
 }
 
+const $getMinterBalance = async (address?: string): Promise<number> => {
+  address = address || $getPublicFromWallet()
+
+  return $blockchain().filter((b: Block) => b.minterAddress === address).length
+}
+
+const $getAllBalances = async (): Promise<Balance[]> => {
+  const balances = []
+
+  await $blockchain().map(async (block: Block) => {
+    const bIndex = balances.find(b => b.minterAddress === block.minterAddress)
+    if (bIndex) {
+      balances[bIndex].balance = balances[bIndex].balance + 1
+      return
+    }
+
+    balances.push({balance: 1, minterAddress: block.minterAddress})
+  })
+
+  return balances
+}
 const calculateHash = (block: Block) =>
   CryptoJS.SHA256(
     block.index +
@@ -403,5 +428,7 @@ export {
   $stopMinting,
   $addFlowsToClaims,
   $generateRawNextBlock,
-  $findBlock
+  $findBlock,
+  $getMinterBalance,
+  $getAllBalances
 }

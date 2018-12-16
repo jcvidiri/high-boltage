@@ -1,15 +1,17 @@
 // import {$getSockets} from '../../p2p'
-import {$blockchain} from '../../blockchain'
+import {$blockchain, $getMinterBalance, $getAllBalances} from '../../blockchain'
 // import {$getPublicFromWallet} from '../../wallet'
 import * as _ from 'lodash'
 import {$contractPool} from '../../contract'
 import {$flowPool} from '../../flow'
+import {$getPublicFromWallet} from '../../wallet'
 
 var resolvers = {
   Query: {
     // peers,
-    // balance,
-    // address,
+    balance,
+    allBalances,
+    address,
     // block,
     blockchain,
     // transaction,
@@ -27,13 +29,17 @@ export default resolvers
 //   return $getSockets().map((s: any) => s._socket.remoteAddress + ':' + s._socket.remotePort)
 // }
 
-// async function balance() {
-//   return $getAccountBalance()
-// }
+async function balance(__, {address}: {address: string}) {
+  return $getMinterBalance(address)
+}
 
-// async function address() {
-//   return $getPublicFromWallet()
-// }
+async function allBalances() {
+  return $getAllBalances()
+}
+
+async function address() {
+  return $getPublicFromWallet()
+}
 
 // async function block(__, {hash}) {
 //   return _.find($blockchain(), {hash})

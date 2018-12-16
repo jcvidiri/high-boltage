@@ -1,7 +1,8 @@
 type Query {
   # peers: [String!]
-  # balance: String
-  # address: String
+  balance(address: String): String
+  allBalances: [Balance]
+  address: String
   # block(hash: String!): Block
   blockchain: [Block]
   # transaction(id: String!): Transaction
