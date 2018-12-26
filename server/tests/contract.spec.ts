@@ -1,12 +1,12 @@
 import {expect} from 'chai'
 import {describe, it} from 'mocha'
-import {Contract, $cleanContractPool, $addContractToPool, $contractPool} from '../src/contract'
+import {Contract, $cleanContractPool, $addToContractPool, $contractPool} from '../src/contract'
 import {getCurrentTimestamp} from '../src/utils'
 import * as ecdsa from 'elliptic'
 const ec = new ecdsa.ec('secp256k1')
 
 describe('Contract test', async () => {
-  it('$addContractToPool. Expect ok.', async () => {
+  it('$addToContractPool. Expect ok.', async () => {
     await $cleanContractPool()
     const key = await ec.genKeyPair()
     const pubKey = await key.getPublic().encode('hex')
@@ -25,8 +25,8 @@ describe('Contract test', async () => {
       expDate: getCurrentTimestamp() + 1000
     })
 
-    await $addContractToPool(contract1)
-    await $addContractToPool(contract2)
+    await $addToContractPool(contract1)
+    await $addToContractPool(contract2)
 
     const ctPool = await $contractPool()
 

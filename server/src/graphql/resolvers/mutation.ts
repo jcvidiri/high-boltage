@@ -2,12 +2,13 @@ import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
 const ec = new ecdsa.ec('secp256k1')
 
-import {Contract, ContractInput, $addContractToPool} from '../../contract'
+import {Contract, ContractInput, $addToContractPool} from '../../contract'
 import {Flow} from '../../flow'
 import {$addToFlowPool} from '../../flow'
 import {$startMinting, $stopMinting} from '../../blockchain'
 import {getCurrentTimestamp, toHexString} from '../../utils'
 import {$getPublicFromWallet, $getPrivateFromWallet} from '../../wallet'
+import {$broadcastNewClaim, $broadcastNewFlow} from '../../p2p'
 
 var resolvers = {
   Mutation: {
@@ -54,7 +55,9 @@ async function stopMinting() {
 //   return $generateRawNextBlock(blockData)
 // }
 async function addFlow(__, {flow}: {flow: Flow}) {
-  return $addToFlowPool(flow)
+  const fl = await $addToFlowPool(flow)
+  await $broadcastNewFlow(flow)
+  return fl
 }
 
 async function createFlow(__, {flow}: {flow: Flow}) {
@@ -68,11 +71,14 @@ async function createFlow(__, {flow}: {flow: Flow}) {
   const key = ec.keyFromPrivate(privKey, 'hex')
   flow.signature = await toHexString(key.sign(flow.id).toDER())
 
-  return $addToFlowPool(flow)
+  const fl = await $addToFlowPool(flow)
+  await $broadcastNewFlow(fl)
+  return fl
 }
 
 async function createContract(__, {contract}: {contract: ContractInput}): Promise<Contract> {
   const rawContract = new Contract(contract)
-  await $addContractToPool(rawContract)
+  await $addToContractPool(rawContract)
+  await $broadcastNewClaim(rawContract)
   return rawContract
 }

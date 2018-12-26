@@ -1,32 +1,30 @@
 import * as WebSocket from 'ws'
 import {Server} from 'ws'
-import {
-  addBlockToChain,
-  Block,
-  $blockchain,
-  getLatestBlock
-  // handleReceivedTransaction,
-  // isValidBlockStructure,
-  // replaceChain
-} from './blockchain'
-// import {Transaction} from './transaction'
-// import {$transactionPool} from './transaction-pool'
+import {addBlockToChain, Block, $blockchain, getLatestBlock, $replaceChain} from './blockchain'
 import {JSONToObject} from './utils'
-
-const sockets: WebSocket[] = []
-
-enum MessageType {
-  QUERY_LATEST = 0,
-  QUERY_ALL = 1,
-  RESPONSE_BLOCKCHAIN = 2,
-  QUERY_TRANSACTION_POOL = 3,
-  RESPONSE_TRANSACTION_POOL = 4,
-  RESPONSE_MEASUREMENT_POOL = 5
-}
+import {Flow, $flowPool, $replaceFlowPool, $addToFlowPool} from './flow'
+import {Contract, $contractPool, $addToContractPool, $replaceContractPool} from './contract'
 
 class Message {
   public type: MessageType
   public data: any
+}
+
+const sockets: WebSocket[] = []
+
+enum MessageType {
+  QUERY_LATEST = 'QUERY_LATEST',
+  QUERY_ALL_POOLS = 'QUERY_ALL_POOLS',
+  RESPONSE_ALL_POOLS = 'RESPONSE_ALL_POOLS',
+  QUERY_BLOCKCHAIN = 'QUERY_BLOCKCHAIN',
+  RESPONSE_BLOCKCHAIN = 'RESPONSE_BLOCKCHAIN',
+  RESPONSE_BLOCK = 'RESPONSE_BLOCK',
+  QUERY_CLAIM_POOL = 'QUERY_CLAIM_POOL',
+  QUERY_FLOW_POOL = 'QUERY_FLOW_POOL',
+  RESPONSE_CLAIM_POOL = 'RESPONSE_CLAIM_POOL',
+  RESPONSE_FLOW_POOL = 'RESPONSE_FLOW_POOL',
+  NEW_FLOW = 'NEW_FLOW',
+  NEW_CLAIM = 'NEW_CLAIM'
 }
 
 const p2pServer = (port: number, instanceNumber: number, totalInstances: number) => {
@@ -50,94 +48,151 @@ const p2pServer = (port: number, instanceNumber: number, totalInstances: number)
 }
 
 const $getSockets = () => sockets
+const write = (ws: WebSocket, message: Message): void => ws.send(JSON.stringify(message))
+const broadcast = async (message: Message) => sockets.forEach(socket => write(socket, message))
 
 const initConnection = (ws: WebSocket) => {
   sockets.push(ws)
-  // initMessageHandler(ws)
+  initMessageHandler(ws)
   initErrorHandler(ws)
   write(ws, queryChainLengthMsg())
 
   setTimeout(() => {
-    broadcast(queryTransactionPoolMsg())
+    broadcast(queryAllPools())
   }, 500)
 }
 
-// const initMessageHandler = (ws: WebSocket) => {
-//   ws.on('message', (data: string) => {
-//     try {
-//       const message: Message = JSONToObject<Message>(data)
-//       if (message === null) {
-//         // console.log('could not parse received JSON message: ' + data)
-//         return
-//       }
-//       // console.log('Received message: %s', JSON.stringify(message))
-//       switch (message.type) {
-//         case MessageType.QUERY_LATEST:
-//           write(ws, responseLatestMsg())
-//           break
-//         case MessageType.QUERY_ALL:
-//           write(ws, responseChainMsg())
-//           break
-//         case MessageType.RESPONSE_BLOCKCHAIN:
-//           const receivedBlocks: Block[] = JSONToObject<Block[]>(message.data)
-//           if (receivedBlocks === null) {
-//             // console.log('invalid blocks received: %s', JSON.stringify(message.data))
-//             break
-//           }
-//           handleBlockchainResponse(receivedBlocks)
-//           break
-//         case MessageType.QUERY_TRANSACTION_POOL:
-//           write(ws, responseTransactionPoolMsg())
-//           break
-//         case MessageType.RESPONSE_TRANSACTION_POOL:
-//           const receivedTransactions: Transaction[] = JSONToObject<Transaction[]>(message.data)
-//           if (receivedTransactions === null) {
-//             // console.log('invalid transaction received: %s', JSON.stringify(message.data))
-//             break
-//           }
-//           receivedTransactions.forEach((transaction: Transaction) => {
-//             try {
-//               handleReceivedTransaction(transaction)
-//               broadCastTransactionPool()
-//             } catch (e) {
-//               console.log(e.message)
-//             }
-//           })
-//           break
-//       }
-//     } catch (e) {
-//       console.log(e)
-//     }
-//   })
-// }
+// TODO check async websocket works
+const initMessageHandler = async (ws: WebSocket) => {
+  ws.on('message', async (data: string) => {
+    try {
+      const message: Message = JSONToObject<Message>(data)
+      console.log('\n --> message: ', message)
+      if (message === null) return
 
-const write = (ws: WebSocket, message: Message): void => ws.send(JSON.stringify(message))
-const broadcast = (message: Message): void => sockets.forEach(socket => write(socket, message))
+      switch (message.type) {
+        case MessageType.QUERY_LATEST:
+          write(ws, latestBlock())
+          break
+        case MessageType.QUERY_BLOCKCHAIN:
+          write(ws, blockchain())
+          break
+        case MessageType.RESPONSE_BLOCKCHAIN:
+          const receivedBlocks: Block[] = JSONToObject<Block[]>(message.data)
+          if (receivedBlocks === null) break
+          handleBlockchainResponse(receivedBlocks)
+          break
+        case MessageType.RESPONSE_BLOCK:
+          const receivedBlock: Block = JSONToObject<Block>(message.data)
+          console.log('\n --> receivedBlock: ', receivedBlock)
+          if (receivedBlock === null) break
+          handleBlockResponse(receivedBlock)
+          break
+        case MessageType.QUERY_FLOW_POOL:
+          write(ws, flowPool())
+          break
+        case MessageType.QUERY_CLAIM_POOL:
+          write(ws, claimPool())
+          break
+        case MessageType.QUERY_ALL_POOLS:
+          write(ws, allPools())
+          break
+        case MessageType.RESPONSE_FLOW_POOL:
+          const receivedFlows: Flow[] = JSONToObject<Flow[]>(message.data)
+          console.log('\n --> receivedFlows: ', receivedFlows)
+          if (receivedFlows === null) break
+          const newFlows = await handleReceivedFlows(receivedFlows)
+          if (newFlows) await broadcastFlowPool()
+          break
+        case MessageType.RESPONSE_CLAIM_POOL:
+          const receivedClaims: Contract[] = JSONToObject<Contract[]>(message.data)
+          console.log('\n --> receivedClaims: ', receivedClaims)
+          if (receivedClaims === null) break
+          const newClaims = await handleReceivedClaims(receivedClaims)
+          if (newClaims) await broadcastContractPool()
+          break
+        case MessageType.NEW_FLOW:
+          const receivedFlow: Flow = JSONToObject<Flow>(message.data)
+          console.log('\n --> receivedFlow: ', receivedFlow)
+          if (receivedFlow === null) break
+          const newFlow = await handleReceivedFlow(receivedFlow)
+          if (newFlow) await broadcastFlowPool()
+          break
+        case MessageType.NEW_CLAIM:
+          console.log('\n --> new claim: ')
+          const receivedClaim: Contract = JSONToObject<Contract>(message.data)
+          console.log('\n --> receivedClaim: ', receivedClaim)
+          if (receivedClaim === null) break
+          const newClaim = await handleReceivedClaim(receivedClaim)
+          if (newClaim) await broadcastContractPool()
+          break
+      }
+    } catch (e) {
+      console.log(e)
+    }
+  })
+}
 
+// !MESSAGES
 const queryChainLengthMsg = (): Message => ({
   type: MessageType.QUERY_LATEST,
   data: null
 })
 
-const queryAllMsg = (): Message => ({
-  type: MessageType.QUERY_ALL,
+const queryAllPools = (): Message => ({
+  type: MessageType.QUERY_ALL_POOLS,
   data: null
 })
 
-const responseChainMsg = (): Message => ({
+const queryBlockchain = (): Message => ({
+  type: MessageType.QUERY_BLOCKCHAIN,
+  data: null
+})
+
+const blockchain = (): Message => ({
   type: MessageType.RESPONSE_BLOCKCHAIN,
   data: JSON.stringify($blockchain())
 })
 
-const responseLatestMsg = (): Message => ({
+const latestBlock = (): Message => ({
   // broadcast minted block
-  type: MessageType.RESPONSE_BLOCKCHAIN,
+  type: MessageType.RESPONSE_BLOCK,
   data: JSON.stringify([getLatestBlock()])
 })
 
-const queryTransactionPoolMsg = (): Message => ({
-  type: MessageType.QUERY_TRANSACTION_POOL,
+const queryFlowPool = (): Message => ({
+  type: MessageType.QUERY_FLOW_POOL,
   data: null
+})
+
+const queryClaimPool = (): Message => ({
+  type: MessageType.QUERY_CLAIM_POOL,
+  data: null
+})
+
+const flowPool = (): Message => ({
+  type: MessageType.RESPONSE_FLOW_POOL,
+  data: JSON.stringify($flowPool())
+})
+
+const claimPool = (): Message => ({
+  type: MessageType.RESPONSE_CLAIM_POOL,
+  data: JSON.stringify($contractPool())
+})
+
+const allPools = (): Message => ({
+  type: MessageType.RESPONSE_ALL_POOLS,
+  data: JSON.stringify({claim: $contractPool(), flows: $flowPool()})
+})
+
+const newFlow = (flow: Flow): Message => ({
+  type: MessageType.NEW_FLOW,
+  data: JSON.stringify(flow)
+})
+
+const newClaim = (claim: Contract): Message => ({
+  type: MessageType.NEW_CLAIM,
+  data: JSON.stringify(claim)
 })
 
 // const responseTransactionPoolMsg = (): Message => ({
@@ -159,11 +214,73 @@ const initErrorHandler = (ws: WebSocket) => {
   ws.on('error', () => closeConnection(ws))
 }
 
+const handleReceivedFlows = async (flows: Flow[]): Promise<boolean> => {
+  const flowPool = await $flowPool()
+  const flPoolIds = flowPool.map(fl => fl.id)
+  const flPool = new Set([...flPoolIds])
+  const flowsIds = flows.map(fl => fl.id)
+  const newFlowsIds = new Set([...flowsIds].filter(x => !flPool.has(x))) // should check flows added to blockchain too
+
+  if (![...newFlowsIds].length) return false
+
+  const union = []
+  const unionIds = [...new Set([...flowsIds, ...flPoolIds])]
+  await unionIds.map(async flId => {
+    const nFlow = flows.find(f => f.id === flId)
+    const flow = flowPool.find(f => f.id === flId)
+
+    union.push(nFlow || flow)
+  })
+
+  await $replaceFlowPool(union)
+  return true
+}
+
+const handleReceivedFlow = async (flow: Flow): Promise<boolean> => {
+  const flPoolIds = (await $flowPool()).map(fl => fl.id)
+  const flPool = new Set([...flPoolIds])
+  const newFlow = new Set([flow.id].filter(x => !flPool.has(x))) // should check flows added to blockchain too
+
+  if (![...newFlow].length) return false
+
+  $addToFlowPool(flow)
+  return true
+}
+
+const handleReceivedClaims = async (claims: Contract[]): Promise<boolean> => {
+  const contractPool = await $contractPool()
+  const ctPoolIds = contractPool.map(ct => ct.claimId)
+  const claimsIds = claims.map(cl => cl.claimId)
+  const clPool = new Set([...ctPoolIds])
+  const newClaimsIds = new Set([...claimsIds].filter(x => !clPool.has(x))) // should check claims added to blockchain too
+
+  if (![...newClaimsIds].length) return false
+
+  const union = []
+  const unionIds = [...new Set([...claimsIds, ...ctPoolIds])]
+  await unionIds.map(async clId => {
+    const nClaim = claims.find(c => c.claimId === clId)
+    const claim = contractPool.find(c => c.claimId === clId)
+
+    union.push(nClaim || claim)
+  })
+
+  await $replaceContractPool(union)
+  return true
+}
+
+const handleReceivedClaim = async (claim: Contract): Promise<boolean> => {
+  const ctPoolIds = (await $contractPool()).map(ct => ct.claimId)
+  const clPool = new Set([...ctPoolIds])
+  const newClaimId = new Set([claim.claimId].filter(x => !clPool.has(x))) // should check flows added to blockchain too
+  if (![...newClaimId].length) return false
+
+  await $addToContractPool(claim)
+  return true
+}
+
 const handleBlockchainResponse = (receivedBlocks: Block[]) => {
-  if (receivedBlocks.length === 0) {
-    // console.log('received block chain size of 0')
-    return
-  }
+  if (receivedBlocks.length === 0) return
   const latestBlockReceived: Block = receivedBlocks[receivedBlocks.length - 1]
   // if (!isValidBlockStructure(latestBlockReceived)) {
   //   // console.log('block structuture not valid')
@@ -176,22 +293,40 @@ const handleBlockchainResponse = (receivedBlocks: Block[]) => {
     // )
     if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
       if (addBlockToChain(latestBlockReceived)) {
-        broadcast(responseLatestMsg())
+        broadcast(latestBlock())
       }
     } else if (receivedBlocks.length === 1) {
       // console.log('We have to query the chain from our peer')
-      broadcast(queryAllMsg())
+      broadcast(queryBlockchain())
     } else {
       // console.log('Received blockchain is longer than current blockchain')
-      // replaceChain(receivedBlocks)
+      $replaceChain(receivedBlocks)
     }
   } else {
     // console.log('received blockchain is not longer than received blockchain. Do nothing')
   }
 }
 
+const handleBlockResponse = (receivedBlock: Block) => {
+  if (!receivedBlock) return
+  // if (!isValidBlockStructure(receivedBlock)) {
+  //   // console.log('block structuture not valid')
+  //   return
+  // }
+  const latestBlockHeld: Block = getLatestBlock()
+  if (receivedBlock.index > latestBlockHeld.index) {
+    if (latestBlockHeld.hash === receivedBlock.previousHash) {
+      if (addBlockToChain(receivedBlock)) {
+        broadcast(latestBlock())
+      }
+    } else {
+      broadcast(queryBlockchain())
+    }
+  }
+}
+
 const broadcastLatest = (): void => {
-  broadcast(responseLatestMsg())
+  broadcast(latestBlock())
 }
 
 const $connectToPeer = (newPeer: string): void => {
@@ -205,13 +340,19 @@ const $connectToPeer = (newPeer: string): void => {
   })
 }
 
-// const broadCastTransactionPool = () => {
-//   broadcast(responseTransactionPoolMsg())
-// }
+const broadcastFlowPool = () => {
+  broadcast(flowPool())
+}
 
-// const broadCastMeasurementPool = () => {
-//   broadcast(responseMeasurementPoolMsg())
-// }
+const $broadcastNewFlow = async (flow: Flow) => {
+  return broadcast(newFlow(flow))
+}
+const $broadcastNewClaim = async (claim: Contract) => {
+  return broadcast(newClaim(claim))
+}
 
-// export {$connectToPeer, broadcastLatest, broadCastTransactionPool, p2pServer, $getSockets, broadCastMeasurementPool}
-export {$connectToPeer, broadcastLatest, p2pServer, $getSockets}
+const broadcastContractPool = () => {
+  broadcast(claimPool())
+}
+
+export {$connectToPeer, broadcastLatest, p2pServer, $getSockets, $broadcastNewClaim, $broadcastNewFlow}
