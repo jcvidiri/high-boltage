@@ -68,8 +68,12 @@ const $cleanContractPool = () => {
   contractPool = []
 }
 
-const $addContractToPool = (contract: Contract) => {
-  contractPool.push(contract)
+const $replaceContractPool = (ctPool: Contract[]) => {
+  contractPool = ctPool
+}
+
+const $addToContractPool = async (contract: Contract) => {
+  return contractPool.push(contract)
 }
 
 const $resolvedContracts = async ({claims}: {claims: Contract[]}): Promise<Contract[]> => {
@@ -102,9 +106,10 @@ export {
   Contract,
   $contractPool,
   $cleanContractPool,
-  $addContractToPool,
+  $addToContractPool,
   ContractInput,
   $resolvedContracts,
   $signContracts,
-  $removeClaims
+  $removeClaims,
+  $replaceContractPool
 }

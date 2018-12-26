@@ -333,16 +333,16 @@ const addBlockToChain = (newBlock: Block): boolean => {
   return false
 }
 
-// const replaceChain = (newBlocks: Block[]) => {
-//   const aUnspentTxOuts = isValidChain(newBlocks)
-//   const validChain: boolean = aUnspentTxOuts !== null
-//   if (validChain && getAccumulatedDifficulty(newBlocks) > getAccumulatedDifficulty($blockchain())) {
-//     blockchain = newBlocks
-//     setUnspentTxOuts(aUnspentTxOuts)
-//     updateTransactionPool(unspentTxOuts)
-//     broadcastLatest()
-//   }
-// }
+const $replaceChain = (newBlockchain: Block[]) => {
+  // const aUnspentTxOuts = isValidChain(newBlocks)
+  // const validChain: boolean = aUnspentTxOuts !== null
+  // if (validChain && getAccumulatedDifficulty(newBlocks) > getAccumulatedDifficulty($blockchain())) {
+  blockchain = newBlockchain
+  // setUnspentTxOuts(aUnspentTxOuts)
+  // updateTransactionPool(unspentTxOuts)
+  // broadcastLatest()
+  // }
+}
 
 // const handleReceivedTransaction = (transaction: Transaction) => {
 //   addToTransactionPool(transaction, $unspentTxOuts())
@@ -390,8 +390,6 @@ const $startMinting = async () => {
     await $signContracts({contracts: resolvedContracts})
     process.stdout.write('..')
     const rawBlock = $generateRawNextBlock({contracts: resolvedContracts})
-    console.log('\n --> resolvedContracts.length: ', resolvedContracts.length)
-    console.log('\n --> resolvedContracts[0].measurements.length: ', resolvedContracts[0].measurements.length)
 
     process.stdout.write('..')
     const newBlock = await $findBlock(rawBlock)
@@ -422,7 +420,7 @@ export {
   Block,
   $blockchain,
   getLatestBlock,
-  // replaceChain,
+  $replaceChain,
   addBlockToChain,
   $startMinting,
   $stopMinting,

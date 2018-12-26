@@ -40,6 +40,10 @@ const $cleanFlowPool = () => {
   flowPool = []
 }
 
+const $replaceFlowPool = (flows: Flow[]) => {
+  flowPool = flows
+}
+
 const $addToFlowPool = (fl: Flow) => {
   // todo validate hash is ok
   if (!validFlowSignature(fl) || !isValidFlowStructure(fl)) {
@@ -57,7 +61,6 @@ const $addToFlowPool = (fl: Flow) => {
 const validFlowSignature = (flow: Flow): boolean => {
   const key = ec.keyFromPublic(flow.generator, 'hex')
   const validSignature: boolean = key.verify(flow.id, flow.signature)
-  console.log('\n --> validSignature: ', validSignature)
 
   if (!validSignature) return false
 
@@ -110,4 +113,4 @@ const removeFlowById = async (id: String) => {
 //   return true
 // }
 
-export {Flow, $flowPool, $addToFlowPool, $cleanFlowPool, $removeFlows}
+export {Flow, $flowPool, $addToFlowPool, $cleanFlowPool, $removeFlows, $replaceFlowPool}

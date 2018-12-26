@@ -4,7 +4,7 @@ import {Flow, $flowPool, $cleanFlowPool, $addToFlowPool} from '../src/flow'
 import {
   Contract,
   $cleanContractPool,
-  $addContractToPool,
+  $addToContractPool,
   $contractPool,
   $resolvedContracts,
   $signContracts
@@ -63,9 +63,9 @@ describe('Mint test', async () => {
       expDate: getCurrentTimestamp() + 10000
     })
 
-    await $addContractToPool(contract1)
-    await $addContractToPool(contract2)
-    await $addContractToPool(contract3)
+    await $addToContractPool(contract1)
+    await $addToContractPool(contract2)
+    await $addToContractPool(contract3)
 
     flow1 = {
       id: '',
@@ -191,7 +191,7 @@ describe('Mint test', async () => {
     const newBlock = await $findBlock(rawBlock)
 
     expect(newBlock).to.have.property('index', 1)
-    expect(newBlock).to.have.property('minterBalance', 50)
+    expect(newBlock).to.have.property('minterBalance', 2)
     expect(newBlock).to.have.property('minterAddress', pubKey)
     expect(newBlock).to.have.property(
       'previousHash',
