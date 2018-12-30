@@ -2,9 +2,10 @@ type Query {
   peers: [String!]
   balance(address: String): String
   allBalances: [Balance]
-  address: String
+  address: Address
   block(hash: String!): Block
   blockchain: [Block]
   flowPool: [Flow]
   contractPool: [RawContract]
+  status: String
 }

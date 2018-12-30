@@ -2,21 +2,11 @@ import * as CryptoJS from 'crypto-js'
 import * as _ from 'lodash'
 import {BigNumber} from 'bignumber.js'
 import {broadcastLatest} from './p2p'
-// import {getCoinbaseTransaction, isValidAddress, processTransactions, Transaction, UnspentTxOut} from './transaction'
 import {Flow, $removeFlows} from './flow'
 import {Contract, $contractPool, $resolvedContracts, $signContracts, $removeClaims} from './contract'
 import {$flowPool} from './flow'
-// import {addToTransactionPool, $transactionPool, updateTransactionPool} from './transaction-pool'
-// import {$addToMeasurementPool, $measurementPool, $updateMeasurementsPool} from './flow-pool'
 import {getCurrentTimestamp, timeout} from './utils'
-import {
-  // createTransaction,
-  // findUnspentTxOuts,
-  // $getBalance,
-  $getPrivateFromWallet,
-  $getPublicFromWallet
-  // createMeasurement
-} from './wallet'
+import {$getPublicFromWallet} from './wallet'
 
 const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
@@ -78,16 +68,17 @@ const genesisBlock: Block = new Block(
   '',
   1537145550,
   [genesisContract],
-  0,
+  50,
   0,
   '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0'
 )
 
 let blockchain: Block[] = [genesisBlock]
-
-const $blockchain = (): Block[] => blockchain
 let mint = false
 let blockMinted = false
+let logsEnabled = true
+
+const $blockchain = (): Block[] => blockchain
 const getLatestBlock = (): Block => blockchain[blockchain.length - 1]
 
 const getDifficulty = (blockchain: Block[]): number => {
@@ -149,10 +140,12 @@ const $findBlock = async ({
         contracts,
         difficulty,
         minterBalance,
-        minterAddress: $getPublicFromWallet()
+        minterAddress: await $getPublicFromWallet()
       })
 
-      if (isBlockStakingValid(previousHash, $getPublicFromWallet(), timestamp, minterBalance, difficulty, index)) {
+      if (
+        isBlockStakingValid(previousHash, await $getPublicFromWallet(), timestamp, minterBalance, difficulty, index)
+      ) {
         blockMinted = true
         return new Block(
           index,
@@ -162,7 +155,7 @@ const $findBlock = async ({
           contracts,
           difficulty,
           minterBalance,
-          $getPublicFromWallet()
+          await $getPublicFromWallet()
         )
       }
       pastTimestamp = timestamp
@@ -172,7 +165,7 @@ const $findBlock = async ({
 }
 
 const $getMinterBalance = async (address?: string): Promise<number> => {
-  address = address || $getPublicFromWallet()
+  address = address || (await $getPublicFromWallet())
 
   return $blockchain().filter((b: Block) => b.minterAddress === address).length
 }
@@ -230,12 +223,12 @@ const isValidNewBlock = (newBlock: Block, previousBlock: Block): boolean => {
   return true
 }
 
-// const getAccumulatedDifficulty = (aBlockchain: Block[]): number => {
-//   return aBlockchain
-//     .map(block => block.difficulty)
-//     .map(difficulty => Math.pow(2, difficulty))
-//     .reduce((a, b) => a + b)
-// }
+const getAccumulatedDifficulty = (blockchain: Block[]): number => {
+  return blockchain
+    .map(block => block.difficulty)
+    .map(difficulty => Math.pow(2, difficulty))
+    .reduce((a, b) => a + b)
+}
 
 const isValidTimestamp = (newBlock: Block, previousBlock: Block): boolean => {
   return previousBlock.timestamp - 60 < newBlock.timestamp && newBlock.timestamp - 60 < getCurrentTimestamp()
@@ -278,7 +271,7 @@ const isBlockStakingValid = (
 
   const balanceOverDifficulty = new BigNumber(2) // 2^256 * balance / diff
     .exponentiatedBy(256)
-    .times(balance)
+    .times(balance * 5) // *5 for test purposes
     .dividedBy(difficulty)
   const stakingHash: string = CryptoJS.SHA256(prevhash + address + timestamp).toString()
   const decimalStakingHash = new BigNumber(stakingHash, 16)
@@ -287,31 +280,6 @@ const isBlockStakingValid = (
   return difference >= 0
 }
 
-// const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
-//   const isValidGenesis = (block: Block): boolean => {
-//     return JSON.stringify(block) === JSON.stringify(genesisBlock)
-//   }
-
-//   if (!isValidGenesis(blockchainToValidate[0])) {
-//     return null
-//   }
-
-//   let aUnspentTxOuts: UnspentTxOut[] = []
-
-//   for (let i = 0; i < blockchainToValidate.length; i++) {
-//     const currentBlock: Block = blockchainToValidate[i]
-//     if (i !== 0 && !isValidNewBlock(blockchainToValidate[i], blockchainToValidate[i - 1])) {
-//       return null
-//     }
-
-//     aUnspentTxOuts = processTransactions(currentBlock.data, aUnspentTxOuts, currentBlock.index)
-//     if (aUnspentTxOuts === null) {
-//       // console.log('invalid transactions in blockchain')
-//       return null
-//     }
-//   }
-//   return aUnspentTxOuts
-// }
 const $addFlowsToClaims = async ({flows, claims}: {flows: Flow[]; claims: Contract[]}) => {
   await flows.map(async f => {
     const index = await claims.findIndex(c => c.claimId === f.claimId)
@@ -319,14 +287,9 @@ const $addFlowsToClaims = async ({flows, claims}: {flows: Flow[]; claims: Contra
   })
 }
 
-// const processFlows = ({contracts}) => {
-//   //todo here // should be in flow.ts??
-// }
-
-const addBlockToChain = (newBlock: Block): boolean => {
+const $addBlockToChain = (newBlock: Block): boolean => {
   if (!newBlock) return false
   if (isValidNewBlock(newBlock, getLatestBlock())) {
-    // processFlows({contracts: newBlock.contracts}) // remove flows in contracts from flow-pool
     blockchain.push(newBlock)
     return true
   }
@@ -334,69 +297,51 @@ const addBlockToChain = (newBlock: Block): boolean => {
 }
 
 const $replaceChain = (newBlockchain: Block[]) => {
-  // const aUnspentTxOuts = isValidChain(newBlocks)
-  // const validChain: boolean = aUnspentTxOuts !== null
-  // if (validChain && getAccumulatedDifficulty(newBlocks) > getAccumulatedDifficulty($blockchain())) {
-  blockchain = newBlockchain
-  // setUnspentTxOuts(aUnspentTxOuts)
-  // updateTransactionPool(unspentTxOuts)
-  // broadcastLatest()
-  // }
+  if (getAccumulatedDifficulty(newBlockchain) > getAccumulatedDifficulty($blockchain())) {
+    blockchain = newBlockchain
+    // todo check pools with new blockchain
+  }
 }
 
-// const handleReceivedTransaction = (transaction: Transaction) => {
-//   addToTransactionPool(transaction, $unspentTxOuts())
-// }
+const $status = (): string => {
+  return mint ? 'minting' : 'stopped'
+}
 
-// const $sendMeasurement = (mtIns: Flow[], mtOuts: Flow[]): Measurement => {
-//   const mt: Measurement = createMeasurement(mtIns, mtOuts, getPrivateKey())
-//   $addToMeasurementPool(mt)
-//   broadCastMeasurementPool()
-//   return mt
-// }
-
-// const mintBlock = (block: Block, count: number, callback: Function) => {
-//   if (block) return callback(null, block)
-
-//   setTimeout(function() {
-//     // you can only mint a block per second due to timestamp
-//     count++
-//     block = $generateNextBlock()
-//     console.log('mintBlock no-block count: ', count)
-//     return mintBlock(block, count, callback)
-//   }, 1000)
-// }
+const $setLogs = (logs: boolean): boolean => {
+  logsEnabled = logs
+  return logsEnabled
+}
 
 const $startMinting = async () => {
   mint = true
   while (mint) {
-    process.stdout.write('\n--> minting ')
+    if (logsEnabled) process.stdout.write('\n--> minting ')
 
     const claims = await $contractPool()
     const flows = await $flowPool()
-    process.stdout.write(' ... ' + flows.length + ' flows | ' + claims.length + ' claims ')
+    if (logsEnabled) process.stdout.write(' ... ' + flows.length + ' flows | ' + claims.length + ' claims ')
     if (!flows.length || !claims.length) {
       await timeout(2000)
       continue
     }
     await $addFlowsToClaims({flows, claims})
-    process.stdout.write('.')
+    if (logsEnabled) process.stdout.write('.')
     const resolvedContracts = await $resolvedContracts({claims})
-    process.stdout.write(' ... ' + resolvedContracts.length + ' resolved contracts ')
+    if (logsEnabled) process.stdout.write(' ... ' + resolvedContracts.length + ' resolved contracts ')
     if (!resolvedContracts.length) {
       await timeout(2000)
       continue
     }
     await $signContracts({contracts: resolvedContracts})
-    process.stdout.write('..')
+    if (logsEnabled) process.stdout.write('..')
     const rawBlock = $generateRawNextBlock({contracts: resolvedContracts})
 
-    process.stdout.write('..')
+    if (logsEnabled) process.stdout.write('..')
     const newBlock = await $findBlock(rawBlock)
-    process.stdout.write('..')
+    if (logsEnabled) process.stdout.write('..')
 
-    if (addBlockToChain(newBlock)) {
-      process.stdout.write(' new Block! ')
+    if ($addBlockToChain(newBlock)) {
+      if (logsEnabled) process.stdout.write(' new Block minted! ')
 
       broadcastLatest()
       await $removeClaims(newBlock)
@@ -408,7 +353,7 @@ const $startMinting = async () => {
 
 const $stopMinting = async () => {
   mint = false
-  process.stdout.write('\n\n--> STOP minting <--- ')
+  if (logsEnabled) process.stdout.write('\n\n--> STOP minting <--- \n')
   return {minting: false}
 }
 
@@ -421,12 +366,15 @@ export {
   $blockchain,
   getLatestBlock,
   $replaceChain,
-  addBlockToChain,
+  $addBlockToChain,
   $startMinting,
   $stopMinting,
   $addFlowsToClaims,
   $generateRawNextBlock,
   $findBlock,
   $getMinterBalance,
-  $getAllBalances
+  $getAllBalances,
+  $setLogs,
+  $status,
+  $blockMinted
 }

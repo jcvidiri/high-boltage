@@ -19,4 +19,11 @@ const timeout = ms => {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-export {JSONToObject, toHexString, getCurrentTimestamp, timeout}
+// valid address is a valid ecdsa public key in the 04 + X-coordinate + Y-coordinate format
+const isValidAddress = (address: string): boolean => {
+  if (address.length !== 130 || !address.startsWith('04') || address.match('^[a-fA-F0-9]+$') === null) return false
+
+  return true
+}
+
+export {JSONToObject, toHexString, getCurrentTimestamp, timeout, isValidAddress}

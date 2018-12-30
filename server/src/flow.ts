@@ -61,7 +61,6 @@ const $addToFlowPool = (fl: Flow) => {
 const validFlowSignature = (flow: Flow): boolean => {
   const key = ec.keyFromPublic(flow.generator, 'hex')
   const validSignature: boolean = key.verify(flow.id, flow.signature)
-
   if (!validSignature) return false
 
   return true
@@ -76,16 +75,8 @@ const isValidFlowStructure = (flow: Flow): boolean => {
     typeof flow.amount !== 'number' ||
     typeof flow.claimId !== 'string' ||
     typeof flow.signature !== 'string'
-  ) {
-    console.log('typeof flow.id', typeof flow.id)
-    // console.log('typeof flow.timestamp', typeof flow.timestamp)
-    console.log('typeof flow.generator', typeof flow.generator)
-    console.log('typeof flow.amount', typeof flow.amount)
-    console.log('typeof flow.claimId', typeof flow.claimId)
-    console.log('typeof flow.signature', typeof flow.signature)
-
+  )
     return false
-  }
   return true
 }
 
@@ -100,17 +91,5 @@ const $removeFlows = async (newBlock: Block) => {
 const removeFlowById = async (id: String) => {
   await _.remove(flowPool, fl => fl.id === id)
 }
-
-// valid address is a valid ecdsa public key in the 04 + X-coordinate + Y-coordinate format
-// const isValidAddress = (address: string): boolean => {
-//   if (address.length !== 130) {
-//     return false
-//   } else if (address.match('^[a-fA-F0-9]+$') === null) {
-//     return false
-//   } else if (!address.startsWith('04')) {
-//     return false
-//   }
-//   return true
-// }
 
 export {Flow, $flowPool, $addToFlowPool, $cleanFlowPool, $removeFlows, $replaceFlowPool}

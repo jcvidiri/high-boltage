@@ -6,6 +6,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "npm run tsc; node src/main.js",
+    "stop": "forever stopall",
     "start-multiple": "make start-multiple",
     "start-multiple-2": "npm run start-multiple h=3000 p=6000 i=2",
     "stop-multiple": "make stop-multiple",

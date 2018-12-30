@@ -1,9 +1,9 @@
 import * as WebSocket from 'ws'
 import {Server} from 'ws'
-import {addBlockToChain, Block, $blockchain, getLatestBlock, $replaceChain} from './blockchain'
+import {$addBlockToChain, Block, $blockchain, getLatestBlock, $replaceChain, $blockMinted} from './blockchain'
 import {JSONToObject} from './utils'
-import {Flow, $flowPool, $replaceFlowPool, $addToFlowPool} from './flow'
-import {Contract, $contractPool, $addToContractPool, $replaceContractPool} from './contract'
+import {Flow, $flowPool, $replaceFlowPool, $addToFlowPool, $removeFlows} from './flow'
+import {Contract, $contractPool, $addToContractPool, $replaceContractPool, $removeClaims} from './contract'
 
 class Message {
   public type: MessageType
@@ -67,7 +67,6 @@ const initMessageHandler = async (ws: WebSocket) => {
   ws.on('message', async (data: string) => {
     try {
       const message: Message = JSONToObject<Message>(data)
-      console.log('\n --> message: ', message)
       if (message === null) return
 
       switch (message.type) {
@@ -80,13 +79,12 @@ const initMessageHandler = async (ws: WebSocket) => {
         case MessageType.RESPONSE_BLOCKCHAIN:
           const receivedBlocks: Block[] = JSONToObject<Block[]>(message.data)
           if (receivedBlocks === null) break
-          handleBlockchainResponse(receivedBlocks)
+          await handleBlockchainResponse(receivedBlocks)
           break
         case MessageType.RESPONSE_BLOCK:
           const receivedBlock: Block = JSONToObject<Block>(message.data)
-          console.log('\n --> receivedBlock: ', receivedBlock)
           if (receivedBlock === null) break
-          handleBlockResponse(receivedBlock)
+          await handleBlockResponse(receivedBlock)
           break
         case MessageType.QUERY_FLOW_POOL:
           write(ws, flowPool())
@@ -99,29 +97,24 @@ const initMessageHandler = async (ws: WebSocket) => {
           break
         case MessageType.RESPONSE_FLOW_POOL:
           const receivedFlows: Flow[] = JSONToObject<Flow[]>(message.data)
-          console.log('\n --> receivedFlows: ', receivedFlows)
           if (receivedFlows === null) break
           const newFlows = await handleReceivedFlows(receivedFlows)
           if (newFlows) await broadcastFlowPool()
           break
         case MessageType.RESPONSE_CLAIM_POOL:
           const receivedClaims: Contract[] = JSONToObject<Contract[]>(message.data)
-          console.log('\n --> receivedClaims: ', receivedClaims)
           if (receivedClaims === null) break
           const newClaims = await handleReceivedClaims(receivedClaims)
           if (newClaims) await broadcastContractPool()
           break
         case MessageType.NEW_FLOW:
           const receivedFlow: Flow = JSONToObject<Flow>(message.data)
-          console.log('\n --> receivedFlow: ', receivedFlow)
           if (receivedFlow === null) break
           const newFlow = await handleReceivedFlow(receivedFlow)
           if (newFlow) await broadcastFlowPool()
           break
         case MessageType.NEW_CLAIM:
-          console.log('\n --> new claim: ')
           const receivedClaim: Contract = JSONToObject<Contract>(message.data)
-          console.log('\n --> receivedClaim: ', receivedClaim)
           if (receivedClaim === null) break
           const newClaim = await handleReceivedClaim(receivedClaim)
           if (newClaim) await broadcastContractPool()
@@ -157,7 +150,7 @@ const blockchain = (): Message => ({
 const latestBlock = (): Message => ({
   // broadcast minted block
   type: MessageType.RESPONSE_BLOCK,
-  data: JSON.stringify([getLatestBlock()])
+  data: JSON.stringify(getLatestBlock())
 })
 
 const queryFlowPool = (): Message => ({
@@ -279,7 +272,8 @@ const handleReceivedClaim = async (claim: Contract): Promise<boolean> => {
   return true
 }
 
-const handleBlockchainResponse = (receivedBlocks: Block[]) => {
+const handleBlockchainResponse = async (receivedBlocks: Block[]) => {
+  console.log('\n --> receivedBlocks.length: ', receivedBlocks.length)
   if (receivedBlocks.length === 0) return
   const latestBlockReceived: Block = receivedBlocks[receivedBlocks.length - 1]
   // if (!isValidBlockStructure(latestBlockReceived)) {
@@ -292,14 +286,17 @@ const handleBlockchainResponse = (receivedBlocks: Block[]) => {
     //   'blockchain possibly behind. We got: ' + latestBlockHeld.index + ' Peer got: ' + latestBlockReceived.index
     // )
     if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
-      if (addBlockToChain(latestBlockReceived)) {
+      if ($addBlockToChain(latestBlockReceived)) {
+        await $removeClaims(latestBlockReceived)
+        await $removeFlows(latestBlockReceived)
+
         broadcast(latestBlock())
       }
     } else if (receivedBlocks.length === 1) {
       // console.log('We have to query the chain from our peer')
       broadcast(queryBlockchain())
     } else {
-      // console.log('Received blockchain is longer than current blockchain')
+      console.log('Received blockchain is longer than current blockchain')
       $replaceChain(receivedBlocks)
     }
   } else {
@@ -307,7 +304,7 @@ const handleBlockchainResponse = (receivedBlocks: Block[]) => {
   }
 }
 
-const handleBlockResponse = (receivedBlock: Block) => {
+const handleBlockResponse = async (receivedBlock: Block) => {
   if (!receivedBlock) return
   // if (!isValidBlockStructure(receivedBlock)) {
   //   // console.log('block structuture not valid')
@@ -316,7 +313,11 @@ const handleBlockResponse = (receivedBlock: Block) => {
   const latestBlockHeld: Block = getLatestBlock()
   if (receivedBlock.index > latestBlockHeld.index) {
     if (latestBlockHeld.hash === receivedBlock.previousHash) {
-      if (addBlockToChain(receivedBlock)) {
+      if ($addBlockToChain(receivedBlock)) {
+        await $blockMinted()
+        await $removeClaims(receivedBlock)
+        await $removeFlows(receivedBlock)
+
         broadcast(latestBlock())
       }
     } else {

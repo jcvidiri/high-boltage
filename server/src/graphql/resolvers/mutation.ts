@@ -5,7 +5,7 @@ const ec = new ecdsa.ec('secp256k1')
 import {Contract, ContractInput, $addToContractPool} from '../../contract'
 import {Flow} from '../../flow'
 import {$addToFlowPool} from '../../flow'
-import {$startMinting, $stopMinting} from '../../blockchain'
+import {$startMinting, $stopMinting, $setLogs} from '../../blockchain'
 import {getCurrentTimestamp, toHexString} from '../../utils'
 import {$getPublicFromWallet, $getPrivateFromWallet} from '../../wallet'
 import {$broadcastNewClaim, $broadcastNewFlow} from '../../p2p'
@@ -20,7 +20,8 @@ var resolvers = {
     // sendMeasurement,
     createFlow,
     addFlow,
-    createContract
+    createContract,
+    setLogs
   }
 }
 
@@ -33,6 +34,10 @@ async function startMinting() {
 
 async function stopMinting() {
   return $stopMinting()
+}
+
+async function setLogs(__, {log}) {
+  return $setLogs(log)
 }
 
 // async function mintTransaction(__, {address, amount}) {

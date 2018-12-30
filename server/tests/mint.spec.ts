@@ -25,7 +25,7 @@ const ec = new ecdsa.ec('secp256k1')
 
 describe('Mint test', async () => {
   const sign = async (privateKey, id) => {
-    const key = ec.keyFromPrivate(privateKey, 'hex')
+    const key = await ec.keyFromPrivate(privateKey, 'hex')
     return toHexString(key.sign(id).toDER())
   }
 
@@ -35,8 +35,8 @@ describe('Mint test', async () => {
   let contract1
   let contract2
   let contract3
-  const pubKey = $getPublicFromWallet()
-  const privKey = $getPrivateFromWallet()
+  const pubKey = await $getPublicFromWallet()
+  const privKey = await $getPrivateFromWallet()
 
   beforeEach(async () => {
     await $cleanFlowPool()

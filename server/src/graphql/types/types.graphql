@@ -44,3 +44,8 @@ type Balance {
   balance: Int
   minterAddress: String
 }
+
+type Address {
+  private: String
+  public: String
+}

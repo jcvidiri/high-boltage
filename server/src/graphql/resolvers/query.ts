@@ -1,9 +1,9 @@
 import {$getSockets} from '../../p2p'
-import {$blockchain, $getMinterBalance, $getAllBalances} from '../../blockchain'
+import {$blockchain, $getMinterBalance, $getAllBalances, $status} from '../../blockchain'
 import * as _ from 'lodash'
 import {$contractPool} from '../../contract'
 import {$flowPool} from '../../flow'
-import {$getPublicFromWallet} from '../../wallet'
+import {$getPublicFromWallet, $getPrivateFromWallet} from '../../wallet'
 
 var resolvers = {
   Query: {
@@ -14,7 +14,8 @@ var resolvers = {
     block,
     blockchain,
     flowPool,
-    contractPool
+    contractPool,
+    status
   }
 }
 
@@ -33,7 +34,10 @@ async function allBalances() {
 }
 
 async function address() {
-  return $getPublicFromWallet()
+  return {
+    private: await $getPrivateFromWallet(),
+    public: await $getPublicFromWallet()
+  }
 }
 
 async function block(__, {hash}: {hash: string}) {
@@ -50,4 +54,8 @@ async function flowPool() {
 
 async function contractPool() {
   return $contractPool()
+}
+
+async function status() {
+  return $status()
 }

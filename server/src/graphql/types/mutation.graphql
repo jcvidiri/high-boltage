@@ -4,4 +4,5 @@ type Mutation {
   addFlow(flow: FlowInput!): Flow
   createFlow(flow: CreateFlowInput!): Flow
   createContract(contract: ContractInput!): RawContract
+  setLogs(logs: Boolean!): Boolean
 }
