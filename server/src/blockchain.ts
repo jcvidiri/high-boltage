@@ -231,9 +231,10 @@ const $hasValidContracts = async (block: Block): Promise<boolean> => {
 
     // a little bit recursive but checking id integrity
     if (contract.id !== CryptoJS.SHA256(contract.claimId + contract.measurements.map(m => m.id)).toString())
-      if (!(await validContractSignature(contract, block.minterAddress)))
-        // checking contract signature (from the minter)
-        return false
+      return false
+
+    // checking contract signature (from the minter)
+    if (!(await validContractSignature(contract, block.minterAddress))) return false
 
     const isValid = await validateMeasurements(contract.measurements)
     if (!isValid) return false
