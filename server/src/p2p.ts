@@ -1,6 +1,16 @@
 import * as WebSocket from 'ws'
 import {Server} from 'ws'
-import {$addBlockToChain, Block, $blockchain, getLatestBlock, $replaceChain, $blockMinted} from './blockchain'
+import {
+  $addBlockToChain,
+  Block,
+  $blockchain,
+  getLatestBlock,
+  $replaceChain,
+  $blockMinted,
+  $isValidBlockStructure,
+  $hasValidHash,
+  $hasValidContracts
+} from './blockchain'
 import {JSONToObject} from './utils'
 import {Flow, $flowPool, $replaceFlowPool, $addToFlowPool, $removeFlows} from './flow'
 import {Contract, $contractPool, $addToContractPool, $replaceContractPool, $removeClaims} from './contract'
@@ -306,10 +316,18 @@ const handleBlockchainResponse = async (receivedBlocks: Block[]) => {
 
 const handleBlockResponse = async (receivedBlock: Block) => {
   if (!receivedBlock) return
-  // if (!isValidBlockStructure(receivedBlock)) {
-  //   // console.log('block structuture not valid')
-  //   return
-  // }
+  if (!$isValidBlockStructure(receivedBlock)) {
+    console.log('\n block received not valid')
+    return
+  }
+  if (!$hasValidHash(receivedBlock)) {
+    console.log('\n block hash not valid')
+    return
+  }
+  if (!$hasValidContracts(receivedBlock)) {
+    console.log('\n block has invalid contrac(s)')
+    return
+  }
   const latestBlockHeld: Block = getLatestBlock()
   if (receivedBlock.index > latestBlockHeld.index) {
     if (latestBlockHeld.hash === receivedBlock.previousHash) {

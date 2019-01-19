@@ -23,12 +23,12 @@ import * as ecdsa from 'elliptic'
 import {$getPrivateFromWallet, $getPublicFromWallet} from '../src/wallet'
 const ec = new ecdsa.ec('secp256k1')
 
-describe('Mint test', async () => {
-  const sign = async (privateKey, id) => {
-    const key = await ec.keyFromPrivate(privateKey, 'hex')
-    return toHexString(key.sign(id).toDER())
-  }
+const sign = async (privateKey, id) => {
+  const key = await ec.keyFromPrivate(privateKey, 'hex')
+  return toHexString(key.sign(id).toDER())
+}
 
+describe('Mint test', async () => {
   let flow1
   let flow2
   let flow3
