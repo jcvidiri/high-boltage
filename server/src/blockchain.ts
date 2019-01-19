@@ -234,10 +234,11 @@ const $hasValidContracts = async (block: Block): Promise<boolean> => {
       return false
 
     // checking contract signature (from the minter)
-    if (!(await validContractSignature(contract, block.minterAddress))) return false
+    const hasValidContractSignature = await validContractSignature(contract, block.minterAddress)
+    if (!hasValidContractSignature) return false
 
-    const isValid = await validateMeasurements(contract.measurements)
-    if (!isValid) return false
+    const hasValidMeasurements = await validateMeasurements(contract.measurements)
+    if (!hasValidMeasurements) return false
 
     return true
   })
@@ -290,19 +291,17 @@ const validContractSignature = async (contract: Contract, minterAddress: string)
   return !!validSignature
 }
 
-const isValidNewBlock = (newBlock: Block, previousBlock: Block): boolean => {
-  if (
-    !$hasValidHash(newBlock) ||
-    !$isValidBlockStructure(newBlock) ||
-    !isValidTimestamp(newBlock, previousBlock) ||
-    !$hasValidContracts(newBlock) ||
-    previousBlock.index + 1 !== newBlock.index ||
-    previousBlock.hash !== newBlock.previousHash
-  ) {
-    return false
-  }
+const isValidNewBlock = async (newBlock: Block, previousBlock: Block): Promise<boolean> => {
+  if (previousBlock.index + 1 !== newBlock.index || previousBlock.hash !== newBlock.previousHash) return false
 
-  return true
+  const validations = await Promise.all([
+    $hasValidHash(newBlock),
+    $isValidBlockStructure(newBlock),
+    isValidTimestamp(newBlock, previousBlock),
+    $hasValidContracts(newBlock)
+  ])
+
+  return validations.reduce((t, f) => t && f)
 }
 
 const getAccumulatedDifficulty = (blockchain: Block[]): number => {
@@ -369,9 +368,10 @@ const $addFlowsToClaims = async ({flows, claims}: {flows: Flow[]; claims: Contra
   })
 }
 
-const $addBlockToChain = (newBlock: Block): boolean => {
+const $addBlockToChain = async (newBlock: Block): Promise<boolean> => {
   if (!newBlock) return false
-  if (isValidNewBlock(newBlock, getLatestBlock())) {
+  const isNewBlockValid = await isValidNewBlock(newBlock, getLatestBlock())
+  if (isNewBlockValid) {
     blockchain.push(newBlock)
     return true
   }
@@ -422,12 +422,12 @@ const $startMinting = async () => {
     const newBlock = await $findBlock(rawBlock)
     if (logsEnabled) process.stdout.write('..')
 
-    if ($addBlockToChain(newBlock)) {
+    const blockAdded = await $addBlockToChain(newBlock)
+    if (blockAdded) {
       if (logsEnabled) process.stdout.write(' new Block minted! ')
 
       broadcastLatest()
-      await $removeClaims(newBlock)
-      await $removeFlows(newBlock)
+      await Promise.all([$removeClaims(newBlock), $removeFlows(newBlock)])
     }
     blockMinted = false
   }

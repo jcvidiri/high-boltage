@@ -24,7 +24,7 @@ import {
 import {toHexString, getCurrentTimestamp, timeout} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
-import {$getPrivateFromWallet, $getPublicFromWallet} from '../src/wallet'
+import {$getPrivateFromWallet, $getPublicFromWallet, $getPublicCAMMESA, $getPrivateCAMMESA} from '../src/wallet'
 const ec = new ecdsa.ec('secp256k1')
 
 describe('Validate test', async () => {
@@ -39,8 +39,8 @@ describe('Validate test', async () => {
   let contract1
   let contract2
   let contract3
-  const pubKey = await $getPublicFromWallet()
-  const privKey = await $getPrivateFromWallet()
+  const pubKey = await $getPublicCAMMESA()
+  const privKey = await $getPrivateCAMMESA()
 
   beforeEach(async () => {
     await $cleanFlowPool()

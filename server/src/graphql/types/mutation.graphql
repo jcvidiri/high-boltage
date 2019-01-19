@@ -5,4 +5,6 @@ type Mutation {
   createFlow(flow: CreateFlowInput!): Flow
   createContract(contract: ContractInput!): RawContract
   setLogs(logs: Boolean!): Boolean
+  createFlowWithTestKey(flow: FlowInput!, testKey: String!): Flow
+  createFlowWithPrivateKey(flow: FlowInput!, privateKey: String!): Flow
 }

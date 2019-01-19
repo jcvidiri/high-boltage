@@ -17,6 +17,8 @@ describe('Flow test', async () => {
     const pubKey = await key.getPublic().encode('hex')
     const privKey = await key.getPrivate().toString(16)
 
+    console.log('\n --> pubKey: ', pubKey)
+    console.log('\n --> privKey: ', privKey)
     const flowData1: Flow = {
       id: '',
       timestamp: getCurrentTimestamp(),

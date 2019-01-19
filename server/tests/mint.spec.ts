@@ -20,7 +20,7 @@ import {
 import {toHexString, getCurrentTimestamp, timeout} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
-import {$getPrivateFromWallet, $getPublicFromWallet} from '../src/wallet'
+import {$getPrivateFromWallet, $getPublicFromWallet, $getPublicCAMMESA, $getPrivateCAMMESA} from '../src/wallet'
 const ec = new ecdsa.ec('secp256k1')
 
 const sign = async (privateKey, id) => {
@@ -35,8 +35,8 @@ describe('Mint test', async () => {
   let contract1
   let contract2
   let contract3
-  const pubKey = await $getPublicFromWallet()
-  const privKey = await $getPrivateFromWallet()
+  const pubKey = await $getPublicCAMMESA()
+  const privKey = await $getPrivateCAMMESA()
 
   beforeEach(async () => {
     await $cleanFlowPool()
@@ -150,7 +150,7 @@ describe('Mint test', async () => {
 
     const contracts = await $signContracts({contracts: resolvedContracts})
 
-    const key = ec.keyFromPublic(pubKey, 'hex')
+    const key = ec.keyFromPublic(await $getPublicFromWallet(), 'hex')
     const validSignature0: boolean = await key.verify(contracts[0].id, contracts[0].signature)
     const validSignature1: boolean = await key.verify(contracts[1].id, contracts[1].signature)
     const validSignature2: boolean = await key.verify(contracts[2].id, contracts[2].signature)
@@ -192,7 +192,7 @@ describe('Mint test', async () => {
 
     expect(newBlock).to.have.property('index', 1)
     expect(newBlock).to.have.property('minterBalance', 2)
-    expect(newBlock).to.have.property('minterAddress', pubKey)
+    expect(newBlock).to.have.property('minterAddress', await $getPublicFromWallet())
     expect(newBlock).to.have.property(
       'previousHash',
       '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627'
