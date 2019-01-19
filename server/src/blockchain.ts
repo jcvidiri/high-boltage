@@ -7,6 +7,8 @@ import {Contract, $contractPool, $resolvedContracts, $signContracts, $removeClai
 import {$flowPool} from './flow'
 import {getCurrentTimestamp, timeout} from './utils'
 import {$getPublicFromWallet} from './wallet'
+import * as ecdsa from 'elliptic'
+const ec = new ecdsa.ec('secp256k1')
 
 const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
@@ -68,7 +70,7 @@ const genesisBlock: Block = new Block(
   '',
   1537145550,
   [genesisContract],
-  50,
+  0, // !50
   0,
   '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0'
 )
@@ -196,7 +198,7 @@ const calculateHash = (block: Block) =>
       block.minterAddress
   ).toString()
 
-const isValidBlockStructure = (block: Block): boolean => {
+const $isValidBlockStructure = (block: Block): boolean => {
   return (
     typeof block.index === 'number' &&
     typeof block.hash === 'string' &&
@@ -209,11 +211,90 @@ const isValidBlockStructure = (block: Block): boolean => {
   )
 }
 
+const $hasValidContracts = async (block: Block): Promise<boolean> => {
+  const contractPool = await $contractPool()
+
+  const validations = block.contracts.map(async contract => {
+    const ct = contractPool.find(c => c.claimId === contract.claimId)
+
+    // check contract exists in pool
+    if (!ct) return false
+
+    // check contract claimId integrity
+    if (
+      contract.claimId !==
+      CryptoJS.SHA256(
+        contract.claimant + contract.amount + contract.expDate + contract.price + contract.timestamp
+      ).toString()
+    )
+      return false
+
+    // a little bit recursive but checking id integrity
+    if (contract.id !== CryptoJS.SHA256(contract.claimId + contract.measurements.map(m => m.id)).toString())
+      if (!(await validContractSignature(contract, block.minterAddress)))
+        // checking contract signature (from the minter)
+        return false
+
+    const isValid = await validateMeasurements(contract.measurements)
+    if (!isValid) return false
+
+    return true
+  })
+
+  const result = await Promise.all(validations)
+  return result.reduce((t, f) => t && f)
+}
+
+const validateMeasurements = async (measurements: Flow[]): Promise<boolean> => {
+  const flowPool = await $flowPool()
+
+  const validations = measurements.map(async m => validateFlow(m, flowPool))
+  const result = await Promise.all(validations)
+
+  return result.reduce((t, f) => t && f)
+}
+
+const validateFlow = async (flow: Flow, flowPool: Flow[]): Promise<boolean> => {
+  const flowFromPool = await flowPool.find(fl => fl.id === flow.id)
+  if (!flowFromPool) {
+    console.log('\n Flow doesent exist in pool')
+
+    return false
+  }
+
+  if (flow.id !== CryptoJS.SHA256(flow.timestamp + flow.generator + flow.amount + flow.claimId).toString()) {
+    console.log('\n Flow doesent exist in flow pool')
+
+    return false
+  }
+
+  if (!(await validFlowSignature(flow))) {
+    console.log('\n Invalid flow signature')
+
+    return false
+  }
+
+  return true
+}
+
+const validFlowSignature = async (flow: Flow): Promise<boolean> => {
+  const key = await ec.keyFromPublic(flow.generator, 'hex')
+  const validSignature: boolean = await key.verify(flow.id, flow.signature)
+  return !!validSignature
+}
+
+const validContractSignature = async (contract: Contract, minterAddress: string): Promise<boolean> => {
+  const key = await ec.keyFromPublic(minterAddress, 'hex')
+  const validSignature: boolean = await key.verify(contract.id, contract.signature)
+  return !!validSignature
+}
+
 const isValidNewBlock = (newBlock: Block, previousBlock: Block): boolean => {
   if (
-    !hasValidHash(newBlock) ||
-    !isValidBlockStructure(newBlock) ||
+    !$hasValidHash(newBlock) ||
+    !$isValidBlockStructure(newBlock) ||
     !isValidTimestamp(newBlock, previousBlock) ||
+    !$hasValidContracts(newBlock) ||
     previousBlock.index + 1 !== newBlock.index ||
     previousBlock.hash !== newBlock.previousHash
   ) {
@@ -234,7 +315,7 @@ const isValidTimestamp = (newBlock: Block, previousBlock: Block): boolean => {
   return previousBlock.timestamp - 60 < newBlock.timestamp && newBlock.timestamp - 60 < getCurrentTimestamp()
 }
 
-const hasValidHash = (block: Block): boolean => {
+const $hasValidHash = (block: Block): boolean => {
   if (!hashMatchesBlockContent(block)) return false
 
   if (
@@ -376,5 +457,11 @@ export {
   $getAllBalances,
   $setLogs,
   $status,
-  $blockMinted
+  $blockMinted,
+  $isValidBlockStructure,
+  $hasValidHash,
+  $hasValidContracts,
+  validFlowSignature,
+  validateMeasurements,
+  validateFlow
 }
