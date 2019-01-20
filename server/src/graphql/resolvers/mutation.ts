@@ -9,7 +9,7 @@ import {Flow} from '../../flow'
 import {$addToFlowPool} from '../../flow'
 import {$startMinting, $stopMinting, $setLogs} from '../../blockchain'
 import {getCurrentTimestamp, toHexString} from '../../utils'
-import {$getPublicCAMMESA, $getPrivateCAMMESA} from '../../wallet'
+import {$getPublicCAMMESA, $getPrivateCAMMESA, $getPublicFromWallet, $getPrivateFromWallet} from '../../wallet'
 import {$broadcastNewClaim, $broadcastNewFlow} from '../../p2p'
 
 var resolvers = {
@@ -45,16 +45,20 @@ async function addFlow(__, {flow}: {flow: Flow}) {
   return fl
 }
 
+// !creates flow with cammesa's signature
 async function createFlow(__, {flow}: {flow: Flow}) {
-  const pubKey = await $getPublicCAMMESA()
-  const privKey = await $getPrivateCAMMESA()
+  const pubKey = await $getPublicFromWallet()
+  const privKey = await $getPrivateFromWallet()
+  const privKeyCAMMESA = await $getPrivateCAMMESA()
 
   if (!flow.generator) flow.generator = pubKey
   flow.timestamp = getCurrentTimestamp()
   flow.id = CryptoJS.SHA256(flow.timestamp + flow.generator + flow.amount + flow.claimId).toString()
 
   const key = ec.keyFromPrivate(privKey, 'hex')
+  const cammesaKey = ec.keyFromPrivate(privKeyCAMMESA, 'hex')
   flow.signature = await toHexString(key.sign(flow.id).toDER())
+  flow.cammesaSignature = await toHexString(cammesaKey.sign(flow.id).toDER())
 
   const fl = await $addToFlowPool(flow)
   await $broadcastNewFlow(fl)
@@ -85,12 +89,14 @@ async function createFlowWithTestKey(__, {flow, testKey}: {flow: Flow; testKey: 
   if (testKey === '3') privateKey = process.env.TEST_PRIV_3
 
   const key = await ec.keyFromPrivate(privateKey, 'hex')
+  const cammesaFAKEKey = await ec.keyFromPrivate(privateKey, 'hex')
   const pubKey = await key.getPublic().encode('hex')
 
   if (!flow.generator) flow.generator = pubKey
   flow.timestamp = getCurrentTimestamp()
   flow.id = CryptoJS.SHA256(flow.timestamp + flow.generator + flow.amount + flow.claimId).toString()
   flow.signature = await toHexString(key.sign(flow.id).toDER())
+  flow.cammesaSignature = await toHexString(cammesaFAKEKey.sign(flow.id).toDER()) //!this is gonna be invalid
 
   const fl = await $addToFlowPool(flow)
   await $broadcastNewFlow(fl)

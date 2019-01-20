@@ -94,6 +94,14 @@ const initMessageHandler = async (ws: WebSocket) => {
         case MessageType.RESPONSE_BLOCK:
           const receivedBlock: Block = JSONToObject<Block>(message.data)
           if (receivedBlock === null) break
+          console.log(
+            '\n--> Block Received. contracts: ',
+            receivedBlock.contracts.length.toString(),
+            ' , measurements: ',
+            receivedBlock.contracts
+          )
+          // ' , measurements: ', receivedBlock.contracts.reduce((acc, curr) => acc + curr.measurements.l ength)
+          // )
           await handleBlockResponse(receivedBlock)
           break
         case MessageType.QUERY_FLOW_POOL:

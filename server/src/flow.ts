@@ -13,8 +13,9 @@ class Flow {
   public amount: number // in MWh
   public claimId: string // claim this flow corresponds to
   public signature: string // generators signature (sign(id))
+  public cammesaSignature: string // generators signature (sign(id))
 
-  // !Flow comes already signed from client
+  // !Flow comes already signed from generator
   // constructor(generator: string, amount: number, claimId: string) {
   //   this.timestamp = getCurrentTimestamp()
   //   this.generator = generator
@@ -50,6 +51,7 @@ const $addToFlowPool = (fl: Flow) => {
     throw Error('Trying to add invalid fl to pool')
   }
 
+  // todo valdiate cammesa signtarure
   // if (isflDuplicated(fl)) {
   //   throw Error('Trying to add duplicated fl to pool')
   // }

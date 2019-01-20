@@ -237,7 +237,7 @@ const $hasValidContracts = async (block: Block): Promise<boolean> => {
     const hasValidContractSignature = await validContractSignature(contract, block.minterAddress)
     if (!hasValidContractSignature) return false
 
-    const hasValidMeasurements = await validateMeasurements(contract.measurements)
+    const hasValidMeasurements = await validateMeasurements(contract)
     if (!hasValidMeasurements) return false
 
     return true
@@ -247,16 +247,16 @@ const $hasValidContracts = async (block: Block): Promise<boolean> => {
   return result.reduce((t, f) => t && f)
 }
 
-const validateMeasurements = async (measurements: Flow[]): Promise<boolean> => {
+const validateMeasurements = async (contract: Contract): Promise<boolean> => {
   const flowPool = await $flowPool()
 
-  const validations = measurements.map(async m => validateFlow(m, flowPool))
+  const validations = contract.measurements.map(async m => validateFlow(m, flowPool, contract.claimId))
   const result = await Promise.all(validations)
 
   return result.reduce((t, f) => t && f)
 }
 
-const validateFlow = async (flow: Flow, flowPool: Flow[]): Promise<boolean> => {
+const validateFlow = async (flow: Flow, flowPool: Flow[], claimId: String): Promise<boolean> => {
   const flowFromPool = await flowPool.find(fl => fl.id === flow.id)
   if (!flowFromPool) {
     console.log('\n Flow doesent exist in pool')
@@ -270,8 +270,20 @@ const validateFlow = async (flow: Flow, flowPool: Flow[]): Promise<boolean> => {
     return false
   }
 
+  if (flow.claimId !== claimId) {
+    console.log('\n Flow doesent correspond to contract')
+
+    return false
+  }
+
   if (!(await validFlowSignature(flow))) {
     console.log('\n Invalid flow signature')
+
+    return false
+  }
+
+  if (!(await validCAMMESASignature(flow))) {
+    console.log('\n Invalid flow CAMMESA signature')
 
     return false
   }
@@ -282,6 +294,13 @@ const validateFlow = async (flow: Flow, flowPool: Flow[]): Promise<boolean> => {
 const validFlowSignature = async (flow: Flow): Promise<boolean> => {
   const key = await ec.keyFromPublic(flow.generator, 'hex')
   const validSignature: boolean = await key.verify(flow.id, flow.signature)
+  return !!validSignature
+}
+
+const validCAMMESASignature = async (flow: Flow): Promise<boolean> => {
+  if (!flow.cammesaSignature) return false
+  const key = await ec.keyFromPublic(process.env.CAMMESA_PUB, 'hex')
+  const validSignature: boolean = await key.verify(flow.id, flow.cammesaSignature)
   return !!validSignature
 }
 
@@ -375,6 +394,7 @@ const $addBlockToChain = async (newBlock: Block): Promise<boolean> => {
     blockchain.push(newBlock)
     return true
   }
+  if (logsEnabled) process.stdout.write('\n--> BLOCK IS NOT VALID ')
   return false
 }
 
@@ -464,5 +484,6 @@ export {
   $hasValidContracts,
   validFlowSignature,
   validateMeasurements,
-  validateFlow
+  validateFlow,
+  validCAMMESASignature
 }

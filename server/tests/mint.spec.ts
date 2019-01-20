@@ -20,7 +20,7 @@ import {
 import {toHexString, getCurrentTimestamp, timeout} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
-import {$getPrivateFromWallet, $getPublicFromWallet, $getPublicCAMMESA, $getPrivateCAMMESA} from '../src/wallet'
+import {$getPublicFromWallet, $getPublicCAMMESA, $getPrivateCAMMESA, $getPrivateFromWallet} from '../src/wallet'
 const ec = new ecdsa.ec('secp256k1')
 
 const sign = async (privateKey, id) => {
@@ -29,14 +29,15 @@ const sign = async (privateKey, id) => {
 }
 
 describe('Mint test', async () => {
-  let flow1
-  let flow2
-  let flow3
-  let contract1
-  let contract2
-  let contract3
-  const pubKey = await $getPublicCAMMESA()
-  const privKey = await $getPrivateCAMMESA()
+  let flow1: Flow
+  let flow2: Flow
+  let flow3: Flow
+  let contract1: Contract
+  let contract2: Contract
+  let contract3: Contract
+  const pubKey = await $getPublicFromWallet()
+  const privKey = await $getPrivateFromWallet()
+  const privKeyCAMMESA = await $getPrivateCAMMESA()
 
   beforeEach(async () => {
     await $cleanFlowPool()
@@ -73,7 +74,8 @@ describe('Mint test', async () => {
       generator: pubKey,
       amount: 20,
       claimId: contract1.claimId,
-      signature: ''
+      signature: '',
+      cammesaSignature: ''
     }
 
     flow2 = {
@@ -82,7 +84,8 @@ describe('Mint test', async () => {
       generator: pubKey,
       amount: 20,
       claimId: contract2.claimId,
-      signature: ''
+      signature: '',
+      cammesaSignature: ''
     }
 
     flow3 = {
@@ -91,7 +94,8 @@ describe('Mint test', async () => {
       generator: pubKey,
       amount: 5.001,
       claimId: contract3.claimId,
-      signature: ''
+      signature: '',
+      cammesaSignature: ''
     }
 
     const flow1Hash = await CryptoJS.SHA256(flow1.timestamp + flow1.generator + flow1.amount + flow1.claimId).toString()
@@ -102,8 +106,11 @@ describe('Mint test', async () => {
     flow2.id = flow2Hash
     flow3.id = flow3Hash
     flow1.signature = await sign(privKey, flow1.id)
+    flow1.cammesaSignature = await sign(privKeyCAMMESA, flow1.id)
     flow2.signature = await sign(privKey, flow2.id)
+    flow2.cammesaSignature = await sign(privKeyCAMMESA, flow2.id)
     flow3.signature = await sign(privKey, flow3.id)
+    flow3.cammesaSignature = await sign(privKeyCAMMESA, flow3.id)
 
     await $addToFlowPool(flow1)
     await $addToFlowPool(flow2)
