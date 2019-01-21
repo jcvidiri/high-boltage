@@ -100,7 +100,7 @@ const initMessageHandler = async (ws: WebSocket) => {
             ' , measurements: ',
             receivedBlock.contracts
           )
-          // ' , measurements: ', receivedBlock.contracts.reduce((acc, curr) => acc + curr.measurements.l ength)
+          // ' , measurements: ', receivedBlock.contracts.reduce((acc, curr) => acc + curr.measurements.length)
           // )
           await handleBlockResponse(receivedBlock)
           break

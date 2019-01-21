@@ -1,14 +1,7 @@
 import {expect} from 'chai'
 import {describe, it, beforeEach} from 'mocha'
 import {Flow, $flowPool, $cleanFlowPool, $addToFlowPool} from '../src/flow'
-import {
-  Contract,
-  $cleanContractPool,
-  $addToContractPool,
-  $contractPool,
-  $resolvedContracts,
-  $signContracts
-} from '../src/contract'
+import {Contract, $cleanContractPool, $addToContractPool, $contractPool, $resolvedContracts} from '../src/contract'
 import {
   $addFlowsToClaims,
   $generateRawNextBlock,
@@ -20,7 +13,7 @@ import {
 import {toHexString, getCurrentTimestamp, timeout} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
-import {$getPublicFromWallet, $getPublicCAMMESA, $getPrivateCAMMESA, $getPrivateFromWallet} from '../src/wallet'
+import {$getPublicFromWallet, $getPrivateCAMMESA, $getPrivateFromWallet} from '../src/wallet'
 const ec = new ecdsa.ec('secp256k1')
 
 const sign = async (privateKey, id) => {
@@ -149,32 +142,12 @@ describe('Mint test', async () => {
     )
   })
 
-  it('$signContracts. Expect ok.', async () => {
-    const flows = await $flowPool()
-    const claims = await $contractPool()
-    await $addFlowsToClaims({flows, claims})
-    const resolvedContracts = await $resolvedContracts({claims})
-
-    const contracts = await $signContracts({contracts: resolvedContracts})
-
-    const key = ec.keyFromPublic(await $getPublicFromWallet(), 'hex')
-    const validSignature0: boolean = await key.verify(contracts[0].id, contracts[0].signature)
-    const validSignature1: boolean = await key.verify(contracts[1].id, contracts[1].signature)
-    const validSignature2: boolean = await key.verify(contracts[2].id, contracts[2].signature)
-
-    expect(validSignature0).to.be.true
-    expect(validSignature1).to.be.true
-    expect(validSignature2).to.be.true
-  })
-
   it('$generateRawNextBlock. Expect ok.', async () => {
     const flows = await $flowPool()
     const claims = await $contractPool()
     await $addFlowsToClaims({flows, claims})
     const resolvedContracts = await $resolvedContracts({claims})
-    const contracts = await $signContracts({contracts: resolvedContracts})
-
-    const rawBlock = await $generateRawNextBlock({contracts})
+    const rawBlock = await $generateRawNextBlock({contracts: resolvedContracts})
 
     expect(rawBlock).to.have.property('difficulty', 0)
     expect(rawBlock).to.have.property('index', 1)
@@ -193,8 +166,7 @@ describe('Mint test', async () => {
     const claims = await $contractPool()
     await $addFlowsToClaims({flows, claims})
     const resolvedContracts = await $resolvedContracts({claims})
-    const contracts = await $signContracts({contracts: resolvedContracts})
-    const rawBlock = await $generateRawNextBlock({contracts})
+    const rawBlock = await $generateRawNextBlock({contracts: resolvedContracts})
     const newBlock = await $findBlock(rawBlock)
 
     expect(newBlock).to.have.property('index', 1)

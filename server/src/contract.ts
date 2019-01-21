@@ -6,23 +6,17 @@ import {getCurrentTimestamp} from './utils'
 import {toHexString} from './utils'
 import {$getPrivateFromWallet} from './wallet'
 import {Block} from './blockchain'
-const ec = new ecdsa.ec('secp256k1')
+import * as dotenv from 'dotenv'
 
+dotenv.config()
+const ec = new ecdsa.ec('secp256k1')
+const PRIVATE_KEY = process.env.PRIVATE_KEY
 class ContractInput {
   claimant: string
   amount: number
   price: number
   expDate: number
 }
-// class RawContract {
-//   claimant: string
-//   amount: number
-//   price: number
-//   expDate: number
-//   timestamp: number
-//   claimId: string
-//   measurements: Flow[]
-// }
 
 class Contract {
   public id: string // hash(claimId + measurements)
@@ -43,18 +37,10 @@ class Contract {
     this.expDate = expDate
     this.claimId = CryptoJS.SHA256(claimant + amount + expDate + price + this.timestamp).toString()
     this.measurements = []
+
+    const key = ec.keyFromPrivate(PRIVATE_KEY, 'hex')
+    this.signature = toHexString(key.sign(this.claimId).toDER())
   }
-}
-
-const $signContracts = async ({contracts}: {contracts: Contract[]}): Promise<Contract[]> => {
-  const privateKey = await $getPrivateFromWallet()
-  const key = await ec.keyFromPrivate(privateKey, 'hex')
-
-  await contracts.map(async ct => {
-    ct.id = await CryptoJS.SHA256(ct.claimId + ct.measurements.map(m => m.id)).toString()
-    ct.signature = await toHexString(await key.sign(ct.id).toDER())
-  })
-  return contracts
 }
 
 let contractPool: Contract[] = []
@@ -109,7 +95,6 @@ export {
   $addToContractPool,
   ContractInput,
   $resolvedContracts,
-  $signContracts,
   $removeClaims,
   $replaceContractPool
 }

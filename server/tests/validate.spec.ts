@@ -1,31 +1,22 @@
 import {expect} from 'chai'
 import {describe, it, beforeEach} from 'mocha'
 import {Flow, $flowPool, $cleanFlowPool, $addToFlowPool} from '../src/flow'
-import {
-  Contract,
-  $cleanContractPool,
-  $addToContractPool,
-  $contractPool,
-  $resolvedContracts,
-  $signContracts
-} from '../src/contract'
+import {Contract, $cleanContractPool, $addToContractPool, $contractPool, $resolvedContracts} from '../src/contract'
 import {
   $addFlowsToClaims,
   $generateRawNextBlock,
   $findBlock,
-  $startMinting,
-  $stopMinting,
-  $blockchain,
   validFlowSignature,
   validateFlow,
   validateMeasurements,
   $hasValidContracts,
-  validCAMMESASignature
+  validCAMMESASignature,
+  calculateContractsMR
 } from '../src/blockchain'
-import {toHexString, getCurrentTimestamp, timeout} from '../src/utils'
+import {toHexString, getCurrentTimestamp} from '../src/utils'
 import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
-import {$getPrivateFromWallet, $getPublicFromWallet, $getPublicCAMMESA, $getPrivateCAMMESA} from '../src/wallet'
+import {$getPrivateFromWallet, $getPublicFromWallet, $getPrivateCAMMESA} from '../src/wallet'
 const ec = new ecdsa.ec('secp256k1')
 
 describe('Validate test', async () => {
@@ -210,13 +201,25 @@ describe('Validate test', async () => {
     expect(isValidflowMissingFromPool).to.be.false
   })
 
+  it('validate contracts signature. Expect ok.', async () => {
+    const claims = await $contractPool()
+
+    const key = await ec.keyFromPublic(claims[0].claimant, 'hex')
+
+    const valid0: boolean = await key.verify(claims[0].claimId, claims[0].signature)
+    const valid1: boolean = await key.verify(claims[1].claimId, claims[1].signature)
+    const valid2: boolean = await key.verify(claims[2].claimId, claims[2].signature)
+
+    expect(valid0).to.be.true
+    expect(valid1).to.be.true
+    expect(valid2).to.be.true
+  })
   it('validateMeasurements. Expect ok.', async () => {
     const flows = await $flowPool()
     const claims = await $contractPool()
     await $addFlowsToClaims({flows, claims})
     const resolvedContracts = await $resolvedContracts({claims})
-    const contracts = await $signContracts({contracts: resolvedContracts})
-    const rawBlock = await $generateRawNextBlock({contracts})
+    const rawBlock = await $generateRawNextBlock({contracts: resolvedContracts})
     const newBlock = await $findBlock(rawBlock)
 
     const valid0 = await validateMeasurements(newBlock.contracts[0])
@@ -233,8 +236,7 @@ describe('Validate test', async () => {
     const claims = await $contractPool()
     await $addFlowsToClaims({flows, claims})
     const resolvedContracts = await $resolvedContracts({claims})
-    const contracts = await $signContracts({contracts: resolvedContracts})
-    const rawBlock = await $generateRawNextBlock({contracts})
+    const rawBlock = await $generateRawNextBlock({contracts: resolvedContracts})
     const newBlock = await $findBlock(rawBlock)
 
     const fakeFlow = {
@@ -270,8 +272,8 @@ describe('Validate test', async () => {
     const claims = await $contractPool()
     await $addFlowsToClaims({flows, claims})
     const resolvedContracts = await $resolvedContracts({claims})
-    const contracts = await $signContracts({contracts: resolvedContracts})
-    const rawBlock = await $generateRawNextBlock({contracts})
+    await calculateContractsMR({contracts: resolvedContracts})
+    const rawBlock = await $generateRawNextBlock({contracts: resolvedContracts})
     const newBlock = await $findBlock(rawBlock)
 
     const valid0 = await $hasValidContracts(newBlock)
@@ -279,13 +281,13 @@ describe('Validate test', async () => {
     expect(valid0).to.be.true
   })
 
-  it('$hasValidContracts with fake flow. Expect false.', async () => {
+  it('$hasValidContracts with fake flow. Expect Invalid contract ID.', async () => {
     const flows = await $flowPool()
     const claims = await $contractPool()
     await $addFlowsToClaims({flows, claims})
     const resolvedContracts = await $resolvedContracts({claims})
-    const contracts = await $signContracts({contracts: resolvedContracts})
-    const rawBlock = await $generateRawNextBlock({contracts})
+    await calculateContractsMR({contracts: resolvedContracts})
+    const rawBlock = await $generateRawNextBlock({contracts: resolvedContracts})
     const newBlock = await $findBlock(rawBlock)
 
     const fakeFlow = {
@@ -306,6 +308,38 @@ describe('Validate test', async () => {
     fakeFlow.cammesaSignature = await sign(privKeyCAMMESA, fakeFlow.id)
 
     newBlock.contracts[0].measurements.push(fakeFlow)
+
+    const valid0 = await $hasValidContracts(newBlock)
+
+    expect(valid0).to.be.false
+  })
+
+  it('$hasValidContracts with fake flow signature. Expect Invalid flow signature.', async () => {
+    const fakeFlow = {
+      id: '',
+      timestamp: getCurrentTimestamp(),
+      generator: pubKey,
+      amount: 20,
+      claimId: contract1.claimId,
+      signature: '',
+      cammesaSignature: ''
+    }
+
+    fakeFlow.id = await CryptoJS.SHA256(
+      fakeFlow.timestamp + fakeFlow.generator + fakeFlow.amount + fakeFlow.claimId
+    ).toString()
+
+    fakeFlow.signature = await sign('L4BEDs6eNfdALtRhpRYwjbn5xpZyJHtkAv9um4woKuhNntC6xJp4', fakeFlow.id)
+    fakeFlow.cammesaSignature = await sign(privKeyCAMMESA, fakeFlow.id)
+
+    const flows = await $flowPool()
+    const claims = await $contractPool()
+    await $addFlowsToClaims({flows, claims})
+    const resolvedContracts = await $resolvedContracts({claims})
+    resolvedContracts[0].measurements.push(fakeFlow)
+    await calculateContractsMR({contracts: resolvedContracts})
+    const rawBlock = await $generateRawNextBlock({contracts: resolvedContracts})
+    const newBlock = await $findBlock(rawBlock)
 
     const valid0 = await $hasValidContracts(newBlock)
 

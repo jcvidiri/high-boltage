@@ -5,7 +5,7 @@ import {getCurrentTimestamp} from '../src/utils'
 import * as ecdsa from 'elliptic'
 const ec = new ecdsa.ec('secp256k1')
 
-describe('Contract test', async () => {
+describe('Contract test', () => {
   it('$addToContractPool. Expect ok.', async () => {
     await $cleanContractPool()
     const key = await ec.genKeyPair()

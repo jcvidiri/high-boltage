@@ -20,7 +20,8 @@ var resolvers = {
     addFlow,
     createContract,
     setLogs,
-    createFlowWithPrivateKey
+    createFlowWithPrivateKey,
+    createFlowWithTestKey
   }
 }
 
@@ -47,9 +48,10 @@ async function addFlow(__, {flow}: {flow: Flow}) {
 
 // !creates flow with cammesa's signature
 async function createFlow(__, {flow}: {flow: Flow}) {
-  const pubKey = await $getPublicFromWallet()
-  const privKey = await $getPrivateFromWallet()
-  const privKeyCAMMESA = await $getPrivateCAMMESA()
+  // todo use new Flow()
+  const pubKey: string = await $getPublicFromWallet()
+  const privKey: string = await $getPrivateFromWallet()
+  const privKeyCAMMESA: string = await $getPrivateCAMMESA()
 
   if (!flow.generator) flow.generator = pubKey
   flow.timestamp = getCurrentTimestamp()
@@ -60,7 +62,7 @@ async function createFlow(__, {flow}: {flow: Flow}) {
   flow.signature = await toHexString(key.sign(flow.id).toDER())
   flow.cammesaSignature = await toHexString(cammesaKey.sign(flow.id).toDER())
 
-  const fl = await $addToFlowPool(flow)
+  const fl: Flow = await $addToFlowPool(flow)
   await $broadcastNewFlow(fl)
   return fl
 }
@@ -104,6 +106,7 @@ async function createFlowWithTestKey(__, {flow, testKey}: {flow: Flow; testKey: 
 }
 
 async function createContract(__, {contract}: {contract: ContractInput}): Promise<Contract> {
+  // todo add claimant signature
   const rawContract = new Contract(contract)
   await $addToContractPool(rawContract)
   await $broadcastNewClaim(rawContract)

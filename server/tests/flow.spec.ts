@@ -11,7 +11,7 @@ dotenv.config()
 const ec = new ecdsa.ec('secp256k1')
 
 describe('Flow test', async () => {
-  const cammesaPriv = await $getPrivateCAMMESA
+  const cammesaPriv = await $getPrivateCAMMESA()
   const cammesaKey = ec.keyFromPrivate(cammesaPriv, 'hex')
 
   const sign = async (privateKey, id) => {

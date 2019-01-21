@@ -6,7 +6,8 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 const EC = new ec('secp256k1')
-const privateKey = process.env.PRIVATE_KEY || 'wallet/private-key'
+const privateKey = process.env.PRIVATE_KEY
+const privateKeyFile = process.env.PRIVATE_KEY_FILE || 'wallet/private-key'
 const KEY_FILE_ENABLED = process.env.KEY_FILE_ENABLED === 'true' ? true : false
 const wallet = {priv: '', pub: ''}
 
@@ -18,9 +19,10 @@ const wallet = {priv: '', pub: ''}
 // }
 
 const $getPrivateFromWallet = async (): Promise<string> => {
+  // if (privateKey) return privateKey
   if (!KEY_FILE_ENABLED && wallet.priv) return wallet.priv
 
-  const buffer = readFileSync(privateKey, 'utf8')
+  const buffer = readFileSync(privateKeyFile, 'utf8')
   return buffer.toString()
 }
 

@@ -3,15 +3,19 @@ import * as _ from 'lodash'
 import {BigNumber} from 'bignumber.js'
 import {broadcastLatest} from './p2p'
 import {Flow, $removeFlows} from './flow'
-import {Contract, $contractPool, $resolvedContracts, $signContracts, $removeClaims} from './contract'
+import {Contract, $contractPool, $resolvedContracts, $removeClaims} from './contract'
 import {$flowPool} from './flow'
-import {getCurrentTimestamp, timeout} from './utils'
-import {$getPublicFromWallet} from './wallet'
+import {getCurrentTimestamp, timeout, toHexString} from './utils'
+import {$getPublicFromWallet, $getPrivateFromWallet} from './wallet'
 import * as ecdsa from 'elliptic'
+import * as dotenv from 'dotenv'
+
+dotenv.config()
 const ec = new ecdsa.ec('secp256k1')
 
 const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
+const PRIVATE_KEY: string = process.env.PRIVATE_KEY
 // const mintingWithoutCoinIndex = 100
 
 class Block {
@@ -23,6 +27,7 @@ class Block {
   public difficulty: number
   public minterBalance: number
   public minterAddress: string
+  public signature?: string // todo add signature to block
   // public version: string
 
   constructor(
@@ -43,6 +48,9 @@ class Block {
     this.difficulty = difficulty
     this.minterBalance = minterBalance
     this.minterAddress = minterAddress
+
+    const key = ec.keyFromPrivate(PRIVATE_KEY, 'hex')
+    this.signature = toHexString(key.sign(hash).toDER())
   }
 }
 
@@ -135,7 +143,7 @@ const $findBlock = async ({
   while (!blockMinted) {
     let timestamp: number = getCurrentTimestamp()
     if (pastTimestamp !== timestamp) {
-      let hash: string = calculateHash({
+      let hash: string = await calculateBlockHash({
         index,
         previousHash,
         timestamp,
@@ -187,19 +195,62 @@ const $getAllBalances = async (): Promise<Balance[]> => {
 
   return balances
 }
-const calculateHash = (block: Block) =>
-  CryptoJS.SHA256(
+
+const calculateBlockHash = async (block: Block) => {
+  const contractsHash = await calculateContractsMerkleRoot(block)
+  return CryptoJS.SHA256(
     block.index +
       block.previousHash +
       block.timestamp +
-      block.contracts +
+      contractsHash +
       block.difficulty +
       block.minterBalance +
       block.minterAddress
   ).toString()
+}
+
+const calculateContractsMerkleRoot = async (block: Block): Promise<string> => {
+  const contractsMR = block.contracts.map(async ct => calculateContractMR(ct))
+  const result = await Promise.all(contractsMR)
+
+  const merkleRoot = await result.reduce((t, f) => t + f)
+  return CryptoJS.SHA256(merkleRoot).toString()
+}
+
+const calculateContractsMR = async ({contracts}: {contracts: Contract[]}) => {
+  await Promise.all(contracts.map(async ct => (ct.id = await calculateContractMR(ct))))
+}
+
+const calculateContractMR = async (contract: Contract): Promise<string> => {
+  const measurementsIds = contract.measurements.reduce((mIds, mt) => mIds + mt.id, '')
+  const measurementsMR = CryptoJS.SHA256(measurementsIds).toString()
+
+  const contractMR = CryptoJS.SHA256(contract.claimId + measurementsMR + contract.signature).toString()
+
+  return contractMR
+}
+
+const addContractMR = async (contract: Contract): Promise<Contract> => {
+  const measurementsIds = contract.measurements.reduce((mIds, mt) => mIds + mt.id, '')
+  const measurementsMR = CryptoJS.SHA256(measurementsIds).toString()
+
+  const contractMR = CryptoJS.SHA256(
+    contract.amount +
+      contract.claimId +
+      contract.claimant +
+      measurementsMR +
+      contract.expDate +
+      contract.price +
+      contract.signature +
+      contract.timestamp
+  ).toString()
+
+  contract.id = contractMR
+  return contract
+}
 
 const $isValidBlockStructure = (block: Block): boolean => {
-  return (
+  const isValid =
     typeof block.index === 'number' &&
     typeof block.hash === 'string' &&
     typeof block.contracts === 'object' &&
@@ -208,7 +259,10 @@ const $isValidBlockStructure = (block: Block): boolean => {
     typeof block.previousHash === 'string' &&
     typeof block.minterBalance === 'number' &&
     typeof block.minterAddress === 'string'
-  )
+
+  if (logsEnabled && !isValid) process.stdout.write('Invalid block structure')
+
+  return isValid
 }
 
 const $hasValidContracts = async (block: Block): Promise<boolean> => {
@@ -218,7 +272,10 @@ const $hasValidContracts = async (block: Block): Promise<boolean> => {
     const ct = contractPool.find(c => c.claimId === contract.claimId)
 
     // check contract exists in pool
-    if (!ct) return false
+    if (!ct) {
+      if (logsEnabled) process.stdout.write('\n Contract doesent exist in pool\n')
+      return false
+    }
 
     // check contract claimId integrity
     if (
@@ -226,19 +283,29 @@ const $hasValidContracts = async (block: Block): Promise<boolean> => {
       CryptoJS.SHA256(
         contract.claimant + contract.amount + contract.expDate + contract.price + contract.timestamp
       ).toString()
-    )
+    ) {
+      if (logsEnabled) process.stdout.write('\n Invalid claimId\n')
       return false
+    }
 
-    // a little bit recursive but checking id integrity
-    if (contract.id !== CryptoJS.SHA256(contract.claimId + contract.measurements.map(m => m.id)).toString())
+    // check contract id integrity
+    if (contract.id !== (await calculateContractMR(contract))) {
+      if (logsEnabled) process.stdout.write('\n Invalid contract ID\n')
       return false
+    }
 
-    // checking contract signature (from the minter)
-    const hasValidContractSignature = await validContractSignature(contract, block.minterAddress)
-    if (!hasValidContractSignature) return false
+    // checking contract signature (from the claimant)
+    const hasValidContractSignature = await validContractSignature(contract)
+    if (!hasValidContractSignature) {
+      if (logsEnabled) process.stdout.write('\n Invalid contract signature\n')
+      return false
+    }
 
     const hasValidMeasurements = await validateMeasurements(contract)
-    if (!hasValidMeasurements) return false
+    if (!hasValidMeasurements) {
+      if (logsEnabled) process.stdout.write('\n Invalid measurements\n')
+      return false
+    }
 
     return true
   })
@@ -259,31 +326,31 @@ const validateMeasurements = async (contract: Contract): Promise<boolean> => {
 const validateFlow = async (flow: Flow, flowPool: Flow[], claimId: String): Promise<boolean> => {
   const flowFromPool = await flowPool.find(fl => fl.id === flow.id)
   if (!flowFromPool) {
-    console.log('\n Flow doesent exist in pool')
+    if (logsEnabled) process.stdout.write('\n Flow doesent exist in pool\n')
 
     return false
   }
 
   if (flow.id !== CryptoJS.SHA256(flow.timestamp + flow.generator + flow.amount + flow.claimId).toString()) {
-    console.log('\n Flow doesent exist in flow pool')
+    if (logsEnabled) process.stdout.write('\n Flow doesent exist in flow pool\n')
 
     return false
   }
 
   if (flow.claimId !== claimId) {
-    console.log('\n Flow doesent correspond to contract')
+    if (logsEnabled) process.stdout.write('\n Flow doesent correspond to contract\n')
 
     return false
   }
 
   if (!(await validFlowSignature(flow))) {
-    console.log('\n Invalid flow signature')
+    if (logsEnabled) process.stdout.write('\n Invalid flow signature\n')
 
     return false
   }
 
   if (!(await validCAMMESASignature(flow))) {
-    console.log('\n Invalid flow CAMMESA signature')
+    if (logsEnabled) process.stdout.write('\n Invalid flow CAMMESA signature\n')
 
     return false
   }
@@ -304,9 +371,9 @@ const validCAMMESASignature = async (flow: Flow): Promise<boolean> => {
   return !!validSignature
 }
 
-const validContractSignature = async (contract: Contract, minterAddress: string): Promise<boolean> => {
-  const key = await ec.keyFromPublic(minterAddress, 'hex')
-  const validSignature: boolean = await key.verify(contract.id, contract.signature)
+const validContractSignature = async (contract: Contract): Promise<boolean> => {
+  const key = await ec.keyFromPublic(contract.claimant, 'hex')
+  const validSignature: boolean = await key.verify(contract.claimId, contract.signature)
   return !!validSignature
 }
 
@@ -315,6 +382,7 @@ const isValidNewBlock = async (newBlock: Block, previousBlock: Block): Promise<b
 
   const validations = await Promise.all([
     $hasValidHash(newBlock),
+    $hasValidBlockSignature(newBlock),
     $isValidBlockStructure(newBlock),
     isValidTimestamp(newBlock, previousBlock),
     $hasValidContracts(newBlock)
@@ -331,11 +399,18 @@ const getAccumulatedDifficulty = (blockchain: Block[]): number => {
 }
 
 const isValidTimestamp = (newBlock: Block, previousBlock: Block): boolean => {
-  return previousBlock.timestamp - 60 < newBlock.timestamp && newBlock.timestamp - 60 < getCurrentTimestamp()
+  const isValid = previousBlock.timestamp - 60 < newBlock.timestamp && newBlock.timestamp - 60 < getCurrentTimestamp()
+
+  if (logsEnabled && !isValid) process.stdout.write('Invalid timestamp')
+
+  return isValid
 }
 
-const $hasValidHash = (block: Block): boolean => {
-  if (!hashMatchesBlockContent(block)) return false
+const $hasValidHash = async (block: Block): Promise<boolean> => {
+  if (!(await hashMatchesBlockContent(block))) {
+    if (logsEnabled) process.stdout.write('\n --> Block hash invalid ')
+    return false
+  }
 
   if (
     !isBlockStakingValid(
@@ -347,13 +422,21 @@ const $hasValidHash = (block: Block): boolean => {
       block.index
     )
   ) {
-    // console.log('staking hash not lower than balance over diffculty times 2^256')
+    if (logsEnabled) process.stdout.write('\n Staking hash not lower than balance over diffculty times 2^256')
   }
   return true
 }
 
-const hashMatchesBlockContent = (block: Block): boolean => {
-  const blockHash: string = calculateHash(block)
+const $hasValidBlockSignature = async (block: Block) => {
+  const key = ec.keyFromPublic(block.minterAddress, 'hex')
+  const validSignature: boolean = key.verify(block.hash, block.signature)
+
+  if (logsEnabled && !validSignature) process.stdout.write('Invalid block signature')
+  return !!validSignature
+}
+
+const hashMatchesBlockContent = async (block: Block): Promise<boolean> => {
+  const blockHash: string = await calculateBlockHash(block)
   return blockHash === block.hash
 }
 
@@ -434,7 +517,8 @@ const $startMinting = async () => {
       await timeout(2000)
       continue
     }
-    await $signContracts({contracts: resolvedContracts})
+    await calculateContractsMR({contracts: resolvedContracts})
+
     if (logsEnabled) process.stdout.write('..')
     const rawBlock = $generateRawNextBlock({contracts: resolvedContracts})
 
@@ -485,5 +569,6 @@ export {
   validFlowSignature,
   validateMeasurements,
   validateFlow,
-  validCAMMESASignature
+  validCAMMESASignature,
+  calculateContractsMR
 }
