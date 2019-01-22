@@ -27,7 +27,7 @@ class Block {
   public difficulty: number
   public minterBalance: number
   public minterAddress: string
-  public signature?: string // todo add signature to block
+  public signature?: string
   // public version: string
 
   constructor(
@@ -249,7 +249,7 @@ const addContractMR = async (contract: Contract): Promise<Contract> => {
   return contract
 }
 
-const $isValidBlockStructure = (block: Block): boolean => {
+const $isValidBlockStructure = async (block: Block): Promise<boolean> => {
   const isValid =
     typeof block.index === 'number' &&
     typeof block.hash === 'string' &&
@@ -289,6 +289,7 @@ const $hasValidContracts = async (block: Block): Promise<boolean> => {
     }
 
     // check contract id integrity
+
     if (contract.id !== (await calculateContractMR(contract))) {
       if (logsEnabled) process.stdout.write('\n Invalid contract ID\n')
       return false
@@ -398,7 +399,7 @@ const getAccumulatedDifficulty = (blockchain: Block[]): number => {
     .reduce((a, b) => a + b)
 }
 
-const isValidTimestamp = (newBlock: Block, previousBlock: Block): boolean => {
+const isValidTimestamp = async (newBlock: Block, previousBlock: Block): Promise<boolean> => {
   const isValid = previousBlock.timestamp - 60 < newBlock.timestamp && newBlock.timestamp - 60 < getCurrentTimestamp()
 
   if (logsEnabled && !isValid) process.stdout.write('Invalid timestamp')
@@ -422,12 +423,12 @@ const $hasValidHash = async (block: Block): Promise<boolean> => {
       block.index
     )
   ) {
-    if (logsEnabled) process.stdout.write('\n Staking hash not lower than balance over diffculty times 2^256')
+    if (logsEnabled) process.stdout.write('\n Staking hash not lower than balance over difficulty times 2^256')
   }
   return true
 }
 
-const $hasValidBlockSignature = async (block: Block) => {
+const $hasValidBlockSignature = async (block: Block): Promise<boolean> => {
   const key = ec.keyFromPublic(block.minterAddress, 'hex')
   const validSignature: boolean = key.verify(block.hash, block.signature)
 

@@ -4,7 +4,6 @@ import * as ecdsa from 'elliptic'
 import {Flow} from './flow'
 import {getCurrentTimestamp} from './utils'
 import {toHexString} from './utils'
-import {$getPrivateFromWallet} from './wallet'
 import {Block} from './blockchain'
 import * as dotenv from 'dotenv'
 
