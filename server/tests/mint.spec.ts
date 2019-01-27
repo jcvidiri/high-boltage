@@ -28,8 +28,8 @@ describe('Mint test', async () => {
   let contract1: Contract
   let contract2: Contract
   let contract3: Contract
-  const pubKey = await $getPublicFromWallet()
-  const privKey = await $getPrivateFromWallet()
+  const pubKey = $getPublicFromWallet()
+  const privKey = $getPrivateFromWallet()
   const privKeyCAMMESA = await $getPrivateCAMMESA()
 
   beforeEach(async () => {
@@ -171,7 +171,7 @@ describe('Mint test', async () => {
 
     expect(newBlock).to.have.property('index', 1)
     expect(newBlock).to.have.property('minterBalance', 2)
-    expect(newBlock).to.have.property('minterAddress', await $getPublicFromWallet())
+    expect(newBlock).to.have.property('minterAddress', $getPublicFromWallet())
     expect(newBlock).to.have.property(
       'previousHash',
       '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627'

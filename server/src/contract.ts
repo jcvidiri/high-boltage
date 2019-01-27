@@ -6,10 +6,12 @@ import {getCurrentTimestamp} from './utils'
 import {toHexString} from './utils'
 import {Block} from './blockchain'
 import * as dotenv from 'dotenv'
+import {$getPublicFromWallet, $getPrivateFromWallet} from './wallet'
 
 dotenv.config()
 const ec = new ecdsa.ec('secp256k1')
-const PRIVATE_KEY = process.env.PRIVATE_KEY
+const PRIVATE_KEY = $getPrivateFromWallet()
+const PUBLIC_KEY = $getPublicFromWallet()
 class ContractInput {
   claimant: string
   amount: number
@@ -30,7 +32,7 @@ class Contract {
 
   constructor({claimant, amount, price, expDate}: ContractInput) {
     this.timestamp = getCurrentTimestamp()
-    this.claimant = claimant
+    this.claimant = PUBLIC_KEY
     this.amount = amount
     this.price = price
     this.expDate = expDate

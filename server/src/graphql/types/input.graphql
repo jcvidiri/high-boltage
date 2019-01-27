@@ -2,8 +2,8 @@ input FlowInput {
   id: String
   timestamp: String
   generator: String
-  amount: Float
-  claimId: String
+  amount: Float!
+  claimId: String!
   signature: String
 }
 

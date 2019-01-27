@@ -15,7 +15,7 @@ const ec = new ecdsa.ec('secp256k1')
 
 const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
-const PRIVATE_KEY: string = process.env.PRIVATE_KEY
+const PRIVATE_KEY: string = $getPrivateFromWallet()
 // const mintingWithoutCoinIndex = 100
 
 class Block {
@@ -150,12 +150,10 @@ const $findBlock = async ({
         contracts,
         difficulty,
         minterBalance,
-        minterAddress: await $getPublicFromWallet()
+        minterAddress: $getPublicFromWallet()
       })
 
-      if (
-        isBlockStakingValid(previousHash, await $getPublicFromWallet(), timestamp, minterBalance, difficulty, index)
-      ) {
+      if (isBlockStakingValid(previousHash, $getPublicFromWallet(), timestamp, minterBalance, difficulty, index)) {
         blockMinted = true
         return new Block(
           index,
@@ -165,7 +163,7 @@ const $findBlock = async ({
           contracts,
           difficulty,
           minterBalance,
-          await $getPublicFromWallet()
+          $getPublicFromWallet()
         )
       }
       pastTimestamp = timestamp
@@ -175,7 +173,7 @@ const $findBlock = async ({
 }
 
 const $getMinterBalance = async (address?: string): Promise<number> => {
-  address = address || (await $getPublicFromWallet())
+  address = address || $getPublicFromWallet()
 
   return $blockchain().filter((b: Block) => b.minterAddress === address).length
 }

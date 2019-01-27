@@ -6,9 +6,9 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 const EC = new ec('secp256k1')
-const privateKey = process.env.PRIVATE_KEY
 const privateKeyFile = process.env.PRIVATE_KEY_FILE || 'wallet/private-key'
 const KEY_FILE_ENABLED = process.env.KEY_FILE_ENABLED === 'true' ? true : false
+const UNIQUE_ADDRESS_ENABLED = process.env.UNIQUE_ADDRESS_ENABLED === 'true' ? true : false
 const wallet = {priv: '', pub: ''}
 
 // const getPublicKeyFromPrivate = (privateKey: string): string => {
@@ -18,16 +18,15 @@ const wallet = {priv: '', pub: ''}
 //     .encode('hex')
 // }
 
-const $getPrivateFromWallet = async (): Promise<string> => {
-  // if (privateKey) return privateKey
+const $getPrivateFromWallet = (): string => {
   if (!KEY_FILE_ENABLED && wallet.priv) return wallet.priv
 
   const buffer = readFileSync(privateKeyFile, 'utf8')
   return buffer.toString()
 }
 
-const $getPublicFromWallet = async (): Promise<string> => {
-  const privateKey = await $getPrivateFromWallet()
+const $getPublicFromWallet = (): string => {
+  const privateKey = $getPrivateFromWallet()
   const key = EC.keyFromPrivate(privateKey, 'hex')
   return key.getPublic().encode('hex')
 }
@@ -39,6 +38,18 @@ const generatePrivateKey = async (): Promise<string> => {
 }
 
 const initWallet = async () => {
+  if (UNIQUE_ADDRESS_ENABLED && KEY_FILE_ENABLED) {
+    throw Error('Coult not initWallet: You must disable UNIQUE_ADDRESS_ENABLED or KEY_FILE_ENABLED')
+  }
+  if (UNIQUE_ADDRESS_ENABLED) {
+    const key = await EC.genKeyPair()
+    const pubKey = await key.getPublic().encode('hex')
+    const privKey = await key.getPrivate().toString(16)
+
+    wallet.priv = privKey
+    wallet.pub = pubKey
+    return
+  }
   if (!KEY_FILE_ENABLED) {
     wallet.priv = await generatePrivateKey()
     wallet.pub = EC.keyFromPrivate(wallet.priv, 'hex')
@@ -48,13 +59,13 @@ const initWallet = async () => {
     return
   }
 
-  if (existsSync(privateKey)) return
+  if (existsSync(privateKeyFile)) return
 
-  writeFileSync(privateKey, generatePrivateKey())
+  writeFileSync(privateKeyFile, generatePrivateKey())
 }
 
 const deleteWallet = () => {
-  if (existsSync(privateKey)) unlinkSync(privateKey)
+  if (existsSync(privateKeyFile)) unlinkSync(privateKeyFile)
 }
 
 // ! this is for test pursposes only, real keys would never be stored &

@@ -35,8 +35,8 @@ async function allBalances() {
 
 async function address() {
   return {
-    private: await $getPrivateFromWallet(),
-    public: await $getPublicFromWallet()
+    private: $getPrivateFromWallet(),
+    public: $getPublicFromWallet()
   }
 }
 

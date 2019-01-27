@@ -16,6 +16,7 @@ type Flow {
   amount: Float
   claimId: String
   signature: String
+  cammesaSignature: String
 }
 
 type Contract {
@@ -38,6 +39,7 @@ type RawContract {
   expDate: String
   claimId: String
   measurements: [Flow]
+  signature: String
 }
 
 type Balance {

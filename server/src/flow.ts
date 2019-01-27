@@ -1,7 +1,7 @@
 // import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
 import * as _ from 'lodash'
-import {Block} from './blockchain'
+import {Block, validCAMMESASignature} from './blockchain'
 // import {toHexString, getCurrentTimestamp} from './utils'
 
 const ec = new ecdsa.ec('secp256k1')
@@ -47,11 +47,20 @@ const $replaceFlowPool = (flows: Flow[]) => {
 
 const $addToFlowPool = (fl: Flow) => {
   // todo validate hash is ok
-  if (!validFlowSignature(fl) || !isValidFlowStructure(fl)) {
-    throw Error('Trying to add invalid fl to pool')
+
+  if (!validFlowSignature(fl)) {
+    throw Error('Trying to add invalid fl to pool: Invalid Flow signature')
   }
 
-  // todo valdiate cammesa signtarure
+  if (!validCAMMESASignature(fl)) {
+    throw Error('Trying to add invalid fl to pool: Invalid Flow CAMMESA signature')
+  }
+
+  if (!isValidFlowStructure(fl)) {
+    throw Error('Trying to add invalid fl to pool: Invalid Flow structure')
+  }
+
+  // todo valdiate duplicate
   // if (isflDuplicated(fl)) {
   //   throw Error('Trying to add duplicated fl to pool')
   // }
@@ -61,7 +70,12 @@ const $addToFlowPool = (fl: Flow) => {
 }
 
 const validFlowSignature = (flow: Flow): boolean => {
-  const key = ec.keyFromPublic(flow.generator, 'hex')
+  let key
+  try {
+    key = ec.keyFromPublic(flow.generator, 'hex')
+  } catch (error) {
+    throw Error('Invalid generator address')
+  }
   const validSignature: boolean = key.verify(flow.id, flow.signature)
   if (!validSignature) return false
 
@@ -76,7 +90,8 @@ const isValidFlowStructure = (flow: Flow): boolean => {
     typeof flow.generator !== 'string' ||
     typeof flow.amount !== 'number' ||
     typeof flow.claimId !== 'string' ||
-    typeof flow.signature !== 'string'
+    typeof flow.signature !== 'string' ||
+    typeof flow.cammesaSignature !== 'string'
   )
     return false
   return true

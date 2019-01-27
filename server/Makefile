@@ -11,3 +11,6 @@ stop-multiple:
 	forever stopall;
 log:
 	tail -n 30 -f /Users/juancruz/.forever/hb-$(h)-$(p).log ;
+start-single:
+	npm run tsc;
+	forever start -a --uid hb-$$h-$$p -e error.log -o server.log src/main.js $$h  $$p $$instance $$instances;
