@@ -49,6 +49,12 @@ npm run start-multiple $h $p $i
 npm run stop-multiple
 ```
 
+### Start single node inside multiple hive
+```bash
+npm run start-single $h $p $instance $instances
+```
+> i.e `npm run start-single h=3005 p=6005 instance=6 instances=6`
+
 ### Watch logs
 ```bash
 npm run log $h $p
