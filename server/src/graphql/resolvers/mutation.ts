@@ -9,7 +9,13 @@ import {Flow} from '../../flow'
 import {$addToFlowPool} from '../../flow'
 import {$startMinting, $stopMinting, $setLogs, $setMinterBalanceBase} from '../../blockchain'
 import {getCurrentTimestamp, toHexString} from '../../utils'
-import {$getPublicCAMMESA, $getPrivateCAMMESA, $getPublicFromWallet, $getPrivateFromWallet} from '../../wallet'
+import {
+  $getPublicCAMMESA,
+  $getPrivateCAMMESA,
+  $getPublicFromWallet,
+  $getPrivateFromWallet,
+  generatePrivateKey
+} from '../../wallet'
 import {$broadcastNewClaim, $broadcastNewFlow} from '../../p2p'
 
 var resolvers = {
@@ -52,12 +58,12 @@ async function addFlow(__, {flow}: {flow: Flow}) {
   return fl
 }
 
-// !creates flow with cammesa's signature
+// !creates flow with FAKE cammesa's signature
 async function createFlow(__, {flow}: {flow: Flow}) {
   // todo use new Flow()
   const pubKey: string = $getPublicFromWallet()
   const privKey: string = $getPrivateFromWallet()
-  const privKeyCAMMESA: string = await $getPrivateCAMMESA()
+  const privKeyCAMMESA: string = await generatePrivateKey() // !FAKE KEY
 
   if (!flow.generator) flow.generator = pubKey
   flow.timestamp = getCurrentTimestamp()

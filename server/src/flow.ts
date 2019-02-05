@@ -50,7 +50,11 @@ const $replaceFlowPool = async (flows: Flow[]) => {
 }
 
 const $addToFlowPool = async (fl: Flow) => {
+<<<<<<< HEAD
   const validations = [validFlowSignature(fl), validCAMMESASignature(fl), isValidFlowStructure(fl), validFlowHash(fl)]
+=======
+  // const validations = [validFlowSignature(fl), validCAMMESASignature(fl), isValidFlowStructure(fl)]
+>>>>>>> wip
 
   // todo validate hash is ok
 
@@ -71,9 +75,9 @@ const $addToFlowPool = async (fl: Flow) => {
   //   throw Error('Trying to add duplicated fl to pool')
   // }
 
-  const result = await Promise.all(validations)
-  const valid = result.reduce((t, f) => t && f)
-  if (!valid) throw Error('Invalid Flow')
+  // const result = await Promise.all(validations)
+  // const valid = result.reduce((t, f) => t && f)
+  // if (!valid) throw Error('Invalid Flow')
 
   flowPool.push(fl)
   return fl
