@@ -254,8 +254,8 @@ const handleReceivedFlow = async (flow: Flow): Promise<boolean> => {
 
   if (![...newFlow].length) return false
 
-  $addToFlowPool(flow)
-  return true
+  const added = await $addToFlowPool(flow)
+  return !!added
 }
 
 const handleReceivedClaims = async (claims: Contract[]): Promise<boolean> => {

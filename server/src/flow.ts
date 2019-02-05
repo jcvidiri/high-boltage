@@ -45,31 +45,37 @@ const $replaceFlowPool = (flows: Flow[]) => {
   flowPool = flows
 }
 
-const $addToFlowPool = (fl: Flow) => {
+const $addToFlowPool = async (fl: Flow) => {
+  const validations = [validFlowSignature(fl), validCAMMESASignature(fl), isValidFlowStructure(fl)]
+
   // todo validate hash is ok
 
-  if (!validFlowSignature(fl)) {
-    throw Error('Trying to add invalid fl to pool: Invalid Flow signature')
-  }
+  // if (!validFlowSignature(fl)) {
+  //   throw Error('Trying to add invalid fl to pool: Invalid Flow signature')
+  // }
 
-  if (!validCAMMESASignature(fl)) {
-    throw Error('Trying to add invalid fl to pool: Invalid Flow CAMMESA signature')
-  }
+  // if (!validCAMMESASignature(fl)) {
+  //   throw Error('Trying to add invalid fl to pool: Invalid Flow CAMMESA signature')
+  // }
 
-  if (!isValidFlowStructure(fl)) {
-    throw Error('Trying to add invalid fl to pool: Invalid Flow structure')
-  }
+  // if (!isValidFlowStructure(fl)) {
+  //   throw Error('Trying to add invalid fl to pool: Invalid Flow structure')
+  // }
 
   // todo valdiate duplicate
   // if (isflDuplicated(fl)) {
   //   throw Error('Trying to add duplicated fl to pool')
   // }
 
+  const result = await Promise.all(validations)
+  const valid = result.reduce((t, f) => t && f)
+  if (!valid) throw Error('Invalid Flow')
+
   flowPool.push(fl)
   return fl
 }
 
-const validFlowSignature = (flow: Flow): boolean => {
+const validFlowSignature = async (flow: Flow): Promise<boolean> => {
   let key
   try {
     key = ec.keyFromPublic(flow.generator, 'hex')
@@ -82,7 +88,7 @@ const validFlowSignature = (flow: Flow): boolean => {
   return true
 }
 
-const isValidFlowStructure = (flow: Flow): boolean => {
+const isValidFlowStructure = async (flow: Flow): Promise<boolean> => {
   if (
     flow == null ||
     typeof flow.id !== 'string' ||
