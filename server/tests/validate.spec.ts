@@ -31,8 +31,8 @@ describe('Validate test', async () => {
   let contract1: Contract
   let contract2: Contract
   let contract3: Contract
-  const pubKey = await $getPublicFromWallet()
-  const privKey = await $getPrivateFromWallet()
+  const pubKey = $getPublicFromWallet()
+  const privKey = $getPrivateFromWallet()
   const privKeyCAMMESA = await $getPrivateCAMMESA()
 
   beforeEach(async () => {
