@@ -42,6 +42,8 @@ const $cleanFlowPool = () => {
 }
 
 const $replaceFlowPool = (flows: Flow[]) => {
+  // todo empty flow
+  // todo then push each flow validating them
   flowPool = flows
 }
 
