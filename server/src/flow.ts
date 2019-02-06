@@ -1,4 +1,4 @@
-// import * as CryptoJS from 'crypto-js'
+import * as CryptoJS from 'crypto-js'
 import * as ecdsa from 'elliptic'
 import * as _ from 'lodash'
 import {Block, validCAMMESASignature} from './blockchain'
@@ -41,14 +41,16 @@ const $cleanFlowPool = () => {
   flowPool = []
 }
 
-const $replaceFlowPool = (flows: Flow[]) => {
-  // todo empty flow
-  // todo then push each flow validating them
-  flowPool = flows
+const $replaceFlowPool = async (flows: Flow[]) => {
+  flowPool = []
+  const validateAndAdd = flows.map(flow => $addToFlowPool(flow))
+
+  await Promise.all(validateAndAdd)
+  return
 }
 
 const $addToFlowPool = async (fl: Flow) => {
-  const validations = [validFlowSignature(fl), validCAMMESASignature(fl), isValidFlowStructure(fl)]
+  const validations = [validFlowSignature(fl), validCAMMESASignature(fl), isValidFlowStructure(fl), validFlowHash(fl)]
 
   // todo validate hash is ok
 
@@ -85,7 +87,10 @@ const validFlowSignature = async (flow: Flow): Promise<boolean> => {
     throw Error('Invalid generator address')
   }
   const validSignature: boolean = key.verify(flow.id, flow.signature)
-  if (!validSignature) return false
+  if (!validSignature) {
+    console.error('\nInvalid Flow Signature')
+    return false
+  }
 
   return true
 }
@@ -100,9 +105,20 @@ const isValidFlowStructure = async (flow: Flow): Promise<boolean> => {
     typeof flow.claimId !== 'string' ||
     typeof flow.signature !== 'string' ||
     typeof flow.cammesaSignature !== 'string'
-  )
+  ) {
+    console.error('\nInvalid Flow Structure')
     return false
+  }
   return true
+}
+
+const validFlowHash = async (flow: Flow): Promise<boolean> => {
+  const flowHash = CryptoJS.SHA256(flow.timestamp + flow.generator + flow.amount + flow.claimId).toString()
+  const isValid = flowHash === flow.id
+  if (!isValid) {
+    console.error('\nInvalid Flow hash/id')
+  }
+  return isValid
 }
 
 const $removeFlows = async (newBlock: Block) => {

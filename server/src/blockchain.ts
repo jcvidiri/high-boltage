@@ -367,6 +367,9 @@ const validCAMMESASignature = async (flow: Flow): Promise<boolean> => {
   if (!flow.cammesaSignature) return false
   const key = await ec.keyFromPublic(process.env.CAMMESA_PUB, 'hex')
   const validSignature: boolean = await key.verify(flow.id, flow.cammesaSignature)
+  if (!validSignature) {
+    console.error('\nInvalid Flow CAMMESA Signature')
+  }
   return !!validSignature
 }
 
