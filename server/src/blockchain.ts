@@ -78,7 +78,7 @@ const genesisBlock: Block = new Block(
   '',
   1537145550,
   [genesisContract],
-  0, // !50
+  50, // !50
   0,
   '04c4294d8d9c86ac5d95355f8ced4b3ff50007a90d197ba674448ce957a961fecef6ee03fe3d46163bd441b4361cad77236916b8f4b693fc16d17969a0a2c5a1a0'
 )
