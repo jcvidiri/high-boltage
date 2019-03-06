@@ -7,7 +7,7 @@ dotenv.config()
 import {Contract, ContractInput, $addToContractPool} from '../../contract'
 import {Flow} from '../../flow'
 import {$addToFlowPool} from '../../flow'
-import {$startMinting, $stopMinting, $setLogs} from '../../blockchain'
+import {$startMinting, $stopMinting, $setLogs, $setMinterBalanceBase} from '../../blockchain'
 import {getCurrentTimestamp, toHexString} from '../../utils'
 import {$getPublicCAMMESA, $getPrivateCAMMESA, $getPublicFromWallet, $getPrivateFromWallet} from '../../wallet'
 import {$broadcastNewClaim, $broadcastNewFlow} from '../../p2p'
@@ -20,6 +20,7 @@ var resolvers = {
     addFlow,
     createContract,
     setLogs,
+    setMinterBalanceBase,
     createFlowWithPrivateKey,
     createFlowWithTestKey,
     createFlowWithTestKeyAndFakeCAMMESA
@@ -39,6 +40,10 @@ async function stopMinting() {
 
 async function setLogs(__, {log}) {
   return $setLogs(log)
+}
+
+async function setMinterBalanceBase(__, {minterBalance}) {
+  return $setMinterBalanceBase(minterBalance)
 }
 
 async function addFlow(__, {flow}: {flow: Flow}) {

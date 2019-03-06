@@ -9,7 +9,10 @@ import {
   $blockMinted,
   $isValidBlockStructure,
   $hasValidHash,
-  $hasValidContracts
+  $hasValidContracts,
+  $genesisBlock,
+  $hasValidBlockSignature,
+  isValidTimestamp
 } from './blockchain'
 import {JSONToObject} from './utils'
 import {Flow, $flowPool, $replaceFlowPool, $addToFlowPool, $removeFlows} from './flow'
@@ -93,15 +96,11 @@ const initMessageHandler = async (ws: WebSocket) => {
           break
         case MessageType.RESPONSE_BLOCK:
           const receivedBlock: Block = JSONToObject<Block>(message.data)
-          if (receivedBlock === null) break
           console.log(
-            '\n--> Block Received. contracts: ',
-            receivedBlock.contracts.length.toString(),
-            ' , measurements: ',
-            receivedBlock.contracts
+            '\n--> Block Received. receivedBlock && receivedBlock.index: ',
+            receivedBlock && receivedBlock.index
           )
-          // ' , measurements: ', receivedBlock.contracts.reduce((acc, curr) => acc + curr.measurements.length)
-          // )
+          if (receivedBlock === null) break
           await handleBlockResponse(receivedBlock)
           break
         case MessageType.QUERY_FLOW_POOL:
@@ -112,6 +111,10 @@ const initMessageHandler = async (ws: WebSocket) => {
           break
         case MessageType.QUERY_ALL_POOLS:
           write(ws, allPools())
+          break
+        case MessageType.RESPONSE_ALL_POOLS:
+          const {claim, flows} = JSONToObject<{claim: Contract[]; flows: Flow[]}>(message.data)
+          await handleReceivedAllPools({claim, flows})
           break
         case MessageType.RESPONSE_FLOW_POOL:
           const receivedFlows: Flow[] = JSONToObject<Flow[]>(message.data)
@@ -247,6 +250,13 @@ const handleReceivedFlows = async (flows: Flow[]): Promise<boolean> => {
   return true
 }
 
+const handleReceivedAllPools = async ({claim, flows}: {claim: Contract[]; flows: Flow[]}): Promise<boolean> => {
+  const newFlows = await handleReceivedFlows(flows)
+  const newClaims = await handleReceivedClaims(claim)
+
+  return newFlows || newClaims
+}
+
 const handleReceivedFlow = async (flow: Flow): Promise<boolean> => {
   const flPoolIds = (await $flowPool()).map(fl => fl.id)
   const flPool = new Set([...flPoolIds])
@@ -290,9 +300,14 @@ const handleReceivedClaim = async (claim: Contract): Promise<boolean> => {
   return true
 }
 
+const isGenesisBlock = async (receivedBlocks: Block[]) => {
+  const gb = await $genesisBlock()
+  return receivedBlocks.length === 1 && receivedBlocks[0].index === 0 && receivedBlocks[0].hash === gb.hash
+}
+
 const handleBlockchainResponse = async (receivedBlocks: Block[]) => {
-  console.log('\n --> receivedBlocks.length: ', receivedBlocks.length)
-  if (receivedBlocks.length === 0) return
+  const isGen = await isGenesisBlock(receivedBlocks)
+  if (receivedBlocks.length === 0 || isGen) return
   const latestBlockReceived: Block = receivedBlocks[receivedBlocks.length - 1]
   // if (!isValidBlockStructure(latestBlockReceived)) {
   //   // console.log('block structuture not valid')
@@ -304,7 +319,8 @@ const handleBlockchainResponse = async (receivedBlocks: Block[]) => {
     //   'blockchain possibly behind. We got: ' + latestBlockHeld.index + ' Peer got: ' + latestBlockReceived.index
     // )
     if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
-      if ($addBlockToChain(latestBlockReceived)) {
+      const blockAdded = await $addBlockToChain(latestBlockReceived)
+      if (blockAdded) {
         await $removeClaims(latestBlockReceived)
         await $removeFlows(latestBlockReceived)
 
@@ -317,29 +333,33 @@ const handleBlockchainResponse = async (receivedBlocks: Block[]) => {
       console.log('Received blockchain is longer than current blockchain')
       $replaceChain(receivedBlocks)
     }
-  } else {
-    // console.log('received blockchain is not longer than received blockchain. Do nothing')
   }
+  // else {
+  // console.log('received blockchain is not longer than received blockchain. Do nothing')
+  // }
 }
 
 const handleBlockResponse = async (receivedBlock: Block) => {
   if (!receivedBlock) return
-  if (!$isValidBlockStructure(receivedBlock)) {
-    console.log('\n block received not valid')
-    return
-  }
-  if (!$hasValidHash(receivedBlock)) {
-    console.log('\n block hash not valid')
-    return
-  }
-  if (!$hasValidContracts(receivedBlock)) {
-    console.log('\n block has invalid contrac(s)')
-    return
-  }
+
+  const isGen = await isGenesisBlock([receivedBlock])
+  if (isGen) return
+
   const latestBlockHeld: Block = getLatestBlock()
+
+  const validations = await Promise.all([
+    $hasValidHash(receivedBlock),
+    $hasValidBlockSignature(receivedBlock),
+    $isValidBlockStructure(receivedBlock)
+  ])
+
+  const isValid = validations.reduce((t, f) => t && f)
+  if (!isValid) return
+
   if (receivedBlock.index > latestBlockHeld.index) {
     if (latestBlockHeld.hash === receivedBlock.previousHash) {
-      if ($addBlockToChain(receivedBlock)) {
+      const blockAdded = await $addBlockToChain(receivedBlock)
+      if (blockAdded) {
         await $blockMinted()
         await $removeClaims(receivedBlock)
         await $removeFlows(receivedBlock)
