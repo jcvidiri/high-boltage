@@ -5,6 +5,7 @@ type Mutation {
   createFlow(flow: CreateFlowInput!): Flow
   createContract(contract: ContractInput!): RawContract
   setLogs(logs: Boolean!): Boolean
+  setMinterBalanceBase(minterBalance: Float!): String
   createFlowWithTestKey(flow: FlowInput!, testKey: String!): Flow
   createFlowWithTestKeyAndFakeCAMMESA(flow: FlowInput!, testKey: String): Flow
   createFlowWithPrivateKey(flow: FlowInput!, privateKey: String!): Flow

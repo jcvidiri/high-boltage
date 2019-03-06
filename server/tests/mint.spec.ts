@@ -149,11 +149,11 @@ describe('Mint test', async () => {
     const resolvedContracts = await $resolvedContracts({claims})
     const rawBlock = await $generateRawNextBlock({contracts: resolvedContracts})
 
-    expect(rawBlock).to.have.property('difficulty', 0)
+    expect(rawBlock).to.have.property('difficulty', 50)
     expect(rawBlock).to.have.property('index', 1)
     expect(rawBlock).to.have.property(
       'previousHash',
-      '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627'
+      '812189210e86dc40b7caa167a73983943ca8d315bdc60d09dcc5a38756a12211'
     )
     expect(rawBlock)
       .to.have.property('contracts')
@@ -174,7 +174,7 @@ describe('Mint test', async () => {
     expect(newBlock).to.have.property('minterAddress', $getPublicFromWallet())
     expect(newBlock).to.have.property(
       'previousHash',
-      '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627'
+      '812189210e86dc40b7caa167a73983943ca8d315bdc60d09dcc5a38756a12211'
     )
     expect(newBlock)
       .to.have.property('contracts')

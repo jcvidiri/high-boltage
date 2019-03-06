@@ -66,14 +66,17 @@ npm run log $h $p
 ### FOR DEMO
 ```
 mutation {
-  createFlowWithTestKey(flow: {
-    amount: 50
+  createFlowWithTestKey(flow:{
+    amount: 4,
+    claimId: "6952c20960f56ea781f0b3aa7ad820c3108d60ff9dd67de9546047b63bbd1d2d"
   }, testKey: "1") {
-    amount
+    id
     claimId
+    timestamp
+    amount
     generator
     signature
-    id
+    cammesaSignature
   }
 }
 ```

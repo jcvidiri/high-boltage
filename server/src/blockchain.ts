@@ -15,7 +15,6 @@ const ec = new ecdsa.ec('secp256k1')
 
 const BLOCK_GENERATION_INTERVAL: number = parseInt(process.env.BLOCK_GENERATION_INTERVAL) || 10
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = parseInt(process.env.DIFFICULTY_ADJUSTMENT_INTERVAL) || 10
-const PRIVATE_KEY: string = $getPrivateFromWallet()
 // const mintingWithoutCoinIndex = 100
 
 class Block {
@@ -49,8 +48,9 @@ class Block {
     this.minterBalance = minterBalance
     this.minterAddress = minterAddress
 
-    const key = ec.keyFromPrivate(PRIVATE_KEY, 'hex')
-    this.signature = toHexString(key.sign(hash).toDER())
+    const privateKey: string = $getPrivateFromWallet()
+    const key = ec.keyFromPrivate(privateKey, 'hex')
+    this.signature = toHexString(key.sign(this.hash).toDER())
   }
 }
 
@@ -74,7 +74,7 @@ const genesisContract: Contract = {
 
 const genesisBlock: Block = new Block(
   0,
-  '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627',
+  '812189210e86dc40b7caa167a73983943ca8d315bdc60d09dcc5a38756a12211',
   '',
   1537145550,
   [genesisContract],
@@ -87,6 +87,7 @@ let blockchain: Block[] = [genesisBlock]
 let mint = false
 let blockMinted = false
 let logsEnabled = true
+let minterBalance = null
 
 const $blockchain = (): Block[] => blockchain
 const getLatestBlock = (): Block => blockchain[blockchain.length - 1]
@@ -140,7 +141,7 @@ const $findBlock = async ({
   let pastTimestamp: number = 0
   blockMinted = false
   let minterBalance = (await $getMinterBalance()) + 1
-  while (!blockMinted) {
+  while (!$getBlockMinted()) {
     let timestamp: number = getCurrentTimestamp()
     if (pastTimestamp !== timestamp) {
       let hash: string = await calculateBlockHash({
@@ -172,10 +173,17 @@ const $findBlock = async ({
   }
 }
 
+const $setMinterBalanceBase = async (minBal: number): Promise<number> => {
+  minterBalance = minBal
+  return minterBalance
+}
+
 const $getMinterBalance = async (address?: string): Promise<number> => {
   address = address || $getPublicFromWallet()
 
-  return $blockchain().filter((b: Block) => b.minterAddress === address).length
+  return minterBalance
+    ? $blockchain().filter((b: Block) => b.minterAddress === address).length + minterBalance
+    : $blockchain().filter((b: Block) => b.minterAddress === address).length
 }
 
 const $getAllBalances = async (): Promise<Balance[]> => {
@@ -315,7 +323,6 @@ const $hasValidContracts = async (block: Block): Promise<boolean> => {
 
 const validateMeasurements = async (contract: Contract): Promise<boolean> => {
   const flowPool = await $flowPool()
-
   const validations = contract.measurements.map(async m => validateFlow(m, flowPool, contract.claimId))
   const result = await Promise.all(validations)
 
@@ -526,6 +533,7 @@ const $startMinting = async () => {
 
     if (logsEnabled) process.stdout.write('..')
     const newBlock = await $findBlock(rawBlock)
+    if (!newBlock) continue // todo check this
     if (logsEnabled) process.stdout.write('..')
 
     const blockAdded = await $addBlockToChain(newBlock)
@@ -547,6 +555,11 @@ const $stopMinting = async () => {
 
 const $blockMinted = async () => {
   blockMinted = true
+}
+
+const $getBlockMinted = (): Boolean => blockMinted
+const $genesisBlock = async (): Promise<Block> => {
+  return genesisBlock
 }
 
 export {
@@ -572,5 +585,9 @@ export {
   validateMeasurements,
   validateFlow,
   validCAMMESASignature,
-  calculateContractsMR
+  calculateContractsMR,
+  $genesisBlock,
+  $setMinterBalanceBase,
+  $hasValidBlockSignature,
+  isValidTimestamp
 }

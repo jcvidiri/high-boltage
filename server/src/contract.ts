@@ -36,7 +36,7 @@ class Contract {
     this.amount = amount
     this.price = price
     this.expDate = expDate || getTomorrowTimestamp()
-    this.claimId = CryptoJS.SHA256(claimant + amount + expDate + price + this.timestamp).toString()
+    this.claimId = CryptoJS.SHA256(this.claimant + amount + this.expDate + price + this.timestamp).toString()
     this.measurements = []
 
     const key = ec.keyFromPrivate(PRIVATE_KEY, 'hex')
