@@ -14,6 +14,13 @@ const toHexString = (byteArray): string => {
 }
 
 const getCurrentTimestamp = (): number => Math.round(new Date().getTime() / 1000)
+const getTomorrowTimestamp = (): number => {
+  let today = new Date()
+  let tomorrow = new Date()
+  tomorrow.setDate(today.getDate() + 1)
+
+  return Math.round(tomorrow.getTime() / 1000)
+}
 
 const timeout = ms => {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -26,4 +33,4 @@ const isValidAddress = (address: string): boolean => {
   return true
 }
 
-export {JSONToObject, toHexString, getCurrentTimestamp, timeout, isValidAddress}
+export {JSONToObject, toHexString, getCurrentTimestamp, getTomorrowTimestamp, timeout, isValidAddress}

@@ -2,7 +2,7 @@ import * as CryptoJS from 'crypto-js'
 import * as _ from 'lodash'
 import * as ecdsa from 'elliptic'
 import {Flow} from './flow'
-import {getCurrentTimestamp} from './utils'
+import {getCurrentTimestamp, getTomorrowTimestamp} from './utils'
 import {toHexString} from './utils'
 import {Block} from './blockchain'
 import * as dotenv from 'dotenv'
@@ -35,7 +35,7 @@ class Contract {
     this.claimant = PUBLIC_KEY
     this.amount = amount
     this.price = price
-    this.expDate = expDate
+    this.expDate = expDate || getTomorrowTimestamp()
     this.claimId = CryptoJS.SHA256(claimant + amount + expDate + price + this.timestamp).toString()
     this.measurements = []
 
