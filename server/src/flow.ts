@@ -50,11 +50,7 @@ const $replaceFlowPool = async (flows: Flow[]) => {
 }
 
 const $addToFlowPool = async (fl: Flow) => {
-<<<<<<< HEAD
-  const validations = [validFlowSignature(fl), validCAMMESASignature(fl), isValidFlowStructure(fl), validFlowHash(fl)]
-=======
   // const validations = [validFlowSignature(fl), validCAMMESASignature(fl), isValidFlowStructure(fl)]
->>>>>>> wip
 
   // todo validate hash is ok
 
