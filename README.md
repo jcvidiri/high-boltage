@@ -60,3 +60,35 @@ npm run start-single $h $p $instance $instances
 npm run log $h $p
 ```
 > i.e npm run log h=3000 p=6000
+
+
+
+### FOR DEMO
+```
+mutation {
+  createFlowWithTestKey(flow: {
+    amount: 50
+  }, testKey: "1") {
+    amount
+    claimId
+    generator
+    signature
+    id
+  }
+}
+```
+
+```
+mutation {
+  createContract(contract:{
+    amount: 30,
+ 		price: 900
+  }) {
+    price
+    claimId
+    claimId
+    amount
+    expDate
+  }
+}
+```
