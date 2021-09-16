@@ -1,7 +1,5 @@
 # High Boltage
 
-![High Boltage](miscellaneous/highboltage.png)
-
 ## SERVER
 
 ### Install dependencies
