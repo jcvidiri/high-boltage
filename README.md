@@ -1,4 +1,4 @@
-# High Boltage
+# High ₿oltage
 
 ## SERVER
 
